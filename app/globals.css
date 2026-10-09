@@ -28,102 +28,183 @@
 }
 
 .site-shell {
+  --page-bg: #f6f8fb;
+  --page-ink: #172333;
+  --surface-bg: #ffffff;
+  --surface-tint: #f0f7ff;
+  --card-bg: #ffffff;
+  --card-ink: #243246;
+  --muted-ink: #647083;
+  --line-color: #e1e7ef;
+  --accent-color: #087fce;
+  --accent-hover: #0665aa;
+  --accent-tint: #e7f3ff;
+  color-scheme: light;
+  position: relative;
+  isolation: isolate;
+  background-color: var(--page-bg) !important;
+  background-image:
+    radial-gradient(ellipse at 8% 9%, rgb(91 190 255 / 15%), transparent 30%),
+    radial-gradient(ellipse at 88% 35%, rgb(157 120 245 / 9%), transparent 25%);
+  color: var(--page-ink);
   transition:
     background-color 240ms ease,
     color 240ms ease;
 }
 
 .site-shell.theme-dark {
-  --dark-page: #0b1220;
-  --dark-surface: #111c2a;
-  --dark-card: #141f2e;
-  --dark-ink: #edf3fb;
-  --dark-muted: #a5b2c2;
-  --dark-line: #29374a;
-  background-color: var(--dark-page);
-  color: var(--dark-ink);
+  --page-bg: #0d1421;
+  --page-ink: #edf3fb;
+  --surface-bg: #131e2d;
+  --surface-tint: #17263a;
+  --card-bg: #192638;
+  --card-ink: #eaf2fc;
+  --muted-ink: #bac8d9;
+  --line-color: #34445a;
+  --accent-color: #61c5ff;
+  --accent-hover: #9bdcff;
+  --accent-tint: #173653;
+  color-scheme: dark;
+  background-image:
+    radial-gradient(ellipse at 8% 9%, rgb(29 119 187 / 22%), transparent 32%),
+    radial-gradient(ellipse at 90% 35%, rgb(93 59 159 / 15%), transparent 27%);
 }
 
-.theme-dark header,
-.theme-dark footer {
-  border-color: var(--dark-line);
-  background-color: var(--dark-surface);
+.site-shell header,
+.site-shell footer {
+  border-color: var(--line-color) !important;
+  background-color: var(--surface-bg) !important;
 }
 
-.theme-dark header nav a:first-child,
-.theme-dark header nav a:nth-child(2),
-.theme-dark footer nav a {
-  color: var(--dark-muted);
+.site-shell header nav a:first-child,
+.site-shell header nav a:nth-child(2),
+.site-shell footer nav a {
+  color: var(--muted-ink);
 }
 
-.theme-dark header nav a:first-child:hover,
-.theme-dark header nav a:nth-child(2):hover,
-.theme-dark footer nav a:hover {
-  color: #71c6ff;
+.site-shell header nav a:first-child:hover,
+.site-shell header nav a:nth-child(2):hover,
+.site-shell footer nav a:hover {
+  color: var(--accent-color);
 }
 
-.theme-dark header nav a:nth-last-child(3),
-.theme-dark header nav button {
-  border-color: var(--dark-line);
-  background-color: var(--dark-surface);
-  color: var(--dark-ink);
+.site-shell .brand-name,
+.site-shell h1,
+.site-shell h2,
+.site-shell h3 {
+  color: var(--page-ink);
 }
 
-.theme-dark header nav a:nth-last-child(3):hover,
-.theme-dark header nav button:hover {
-  border-color: #3b6388;
-  color: #71c6ff;
+.site-shell p {
+  color: var(--muted-ink);
 }
 
-.theme-dark h1,
-.theme-dark h2,
-.theme-dark h3,
-.theme-dark footer .text-\[\#172333\] {
-  color: var(--dark-ink);
+.site-shell > section:last-of-type h2 {
+  color: #ffffff !important;
 }
 
-.theme-dark #top > div:first-child > p,
-.theme-dark #what-you-get p,
-.theme-dark #community p,
-.theme-dark footer p {
-  color: var(--dark-muted);
+.site-shell > section:last-of-type p {
+  color: rgb(255 255 255 / 78%) !important;
 }
 
-.theme-dark #top > div:first-child > div:first-child,
-.theme-dark #top > div:first-child > div:last-child {
-  border-color: var(--dark-line);
-  background-color: var(--dark-surface);
+.site-shell > section:last-of-type > div > div > div > p {
+  color: #71c6ff !important;
 }
 
-.theme-dark #what-you-get {
-  border-color: var(--dark-line);
-  background-color: var(--dark-surface);
+.site-shell #top > div:first-child > div:first-child {
+  border-color: #b8dfff;
+  background-color: #e7f5ff;
+  color: #185d91;
 }
 
-.theme-dark #what-you-get article,
-.theme-dark #community article {
-  border-color: var(--dark-line);
-  background-color: var(--dark-card);
+.site-shell.theme-dark #top > div:first-child > div:first-child {
+  border-color: #315b7b;
+  background-color: #173653;
+  color: #c7eaff;
 }
 
-.theme-dark #community > div > div > a {
-  color: #71c6ff;
+.site-shell #top > div:first-child > div:last-child {
+  border-color: var(--line-color);
+  background-color: var(--surface-bg);
+  color: var(--muted-ink);
 }
 
-.theme-dark #community > div > div > article > div > span[role='img'] {
-  background-color: #1c3550;
-  color: #a8d8ff;
+.site-shell #top > div:first-child > div:last-child svg {
+  color: var(--accent-color);
 }
 
-.theme-dark #community article p,
-.theme-dark #what-you-get article h3,
-.theme-dark #community article h3 {
-  color: var(--dark-ink);
+.site-shell #what-you-get {
+  border-color: var(--line-color);
+  background-color: var(--surface-tint);
 }
 
-.theme-dark footer > div > div:last-child {
-  border-color: var(--dark-line);
-  color: var(--dark-muted);
+.site-shell #what-you-get article,
+.site-shell #community article {
+  border-color: var(--line-color);
+  background-color: var(--card-bg);
+}
+
+.site-shell #what-you-get article:nth-child(3n + 1) > div > span:first-child {
+  background-color: #e5f3ff;
+  color: #1678c3;
+}
+
+.site-shell #what-you-get article:nth-child(3n + 2) > div > span:first-child {
+  background-color: #efeaff;
+  color: #7354c5;
+}
+
+.site-shell #what-you-get article:nth-child(3n) > div > span:first-child {
+  background-color: #fff0e4;
+  color: #bc6b28;
+}
+
+.site-shell.theme-dark #what-you-get article > div > span:first-child {
+  background-color: #203b57;
+  color: #90d7ff;
+}
+
+.site-shell #what-you-get article h3,
+.site-shell #community article h3,
+.site-shell #what-you-get article p,
+.site-shell #community article p {
+  color: var(--card-ink);
+}
+
+.site-shell #what-you-get article p,
+.site-shell #community article p {
+  color: var(--muted-ink);
+}
+
+.site-shell #community > div > div > a {
+  color: var(--accent-color);
+}
+
+.site-shell #community > div > div > a:hover {
+  color: var(--accent-hover);
+}
+
+.site-shell.theme-dark #community article [role='img'] {
+  background-color: #203b57;
+  color: #a8dfff;
+}
+
+.site-shell.theme-dark header nav a:nth-last-child(3),
+.site-shell.theme-dark header nav button {
+  border-color: var(--line-color);
+  background-color: var(--surface-tint);
+  color: var(--page-ink);
+}
+
+.site-shell.theme-dark header nav a:nth-last-child(3):hover,
+.site-shell.theme-dark header nav button:hover {
+  border-color: #5683aa;
+  color: #9bdcff;
+}
+
+.site-shell.theme-dark footer > div > div:last-child {
+  border-color: var(--line-color);
+  color: var(--muted-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -71,7 +71,7 @@ function Brand() {
           className="size-full object-contain"
         />
       </span>
-      <span className="text-sm font-bold tracking-[0.1em] text-[#172333]">
+      <span className="brand-name text-sm font-bold tracking-[0.1em] text-[#172333]">
         IGNOU CODERS
       </span>
     </a>
@@ -109,7 +109,7 @@ function JoinLink({ children }: { children: ReactNode }) {
       href={WHATSAPP_LINK}
       target="_blank"
       rel="noreferrer"
-      className="group inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-[#168de2] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(22,113,186,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0878ca] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#168de2]"
+      className="group inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-[#087fce] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(22,113,186,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0665aa] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#168de2]"
     >
       {children}
       <ArrowUpRight
@@ -174,7 +174,7 @@ export function IgnouCodersLanding() {
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#173b62] px-3 text-xs font-semibold text-white transition hover:bg-[#245489] sm:min-h-10 sm:gap-2 sm:px-5 sm:text-sm"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#087fce] px-3 text-xs font-semibold text-white transition hover:bg-[#0665aa] sm:min-h-10 sm:gap-2 sm:px-5 sm:text-sm"
             >
               Sign up <ArrowUpRight aria-hidden="true" className="size-4" />
             </a>
@@ -194,7 +194,7 @@ export function IgnouCodersLanding() {
           </div>
           <h1 className="max-w-2xl text-[2.9rem] font-semibold leading-[1.05] tracking-[-0.055em] text-[#172333] sm:text-6xl lg:text-[4.45rem]">
             Make room for
-            <span className="mt-1 block font-serif font-medium italic text-[#1685ce]">
+            <span className="mt-1 block bg-gradient-to-r from-[#087fce] via-[#1685ce] to-[#7958c8] bg-clip-text font-serif font-medium italic text-transparent">
               what you can build.
             </span>
           </h1>

@@ -19,8 +19,8 @@ function AuthForm() {
   const initialMode = searchParams.get('mode') === 'signin' ? 'signin' : 'signup'
 
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('ignou.student2026@gmail.com')
+  const [password, setPassword] = useState('ignou@2026')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDark, setIsDark] = useState(false)
 

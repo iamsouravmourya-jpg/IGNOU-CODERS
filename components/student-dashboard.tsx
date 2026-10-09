@@ -15,7 +15,7 @@ import { readClasses, type ClassItem } from '@/lib/classes'
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
 interface StudentDashboardProps {
-  onLogout: () => void
+  onLogout: () => Promise<void>
   isDark?: boolean
   toggleTheme?: () => void
 }
@@ -26,6 +26,7 @@ export function StudentDashboard({
 }: StudentDashboardProps) {
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [storageError, setStorageError] = useState('')
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
     function loadClasses() {
@@ -41,6 +42,17 @@ export function StudentDashboard({
     window.addEventListener('storage', loadClasses)
     return () => window.removeEventListener('storage', loadClasses)
   }, [])
+
+  async function handleLogout() {
+    setIsLoggingOut(true)
+    setStorageError('')
+    try {
+      await onLogout()
+    } catch {
+      setStorageError('Could not log out. Please try again.')
+      setIsLoggingOut(false)
+    }
+  }
 
   return (
     <div
@@ -66,11 +78,12 @@ export function StudentDashboard({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={onLogout}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70 sm:text-sm"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-70 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70 sm:text-sm"
             >
               <LogOut className="size-4" />
-              <span>Logout</span>
+              <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
             </button>
           </div>
         </div>

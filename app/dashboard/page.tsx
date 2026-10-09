@@ -3,6 +3,7 @@
 import { StudentDashboard } from '@/components/student-dashboard'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -12,9 +13,15 @@ export default function DashboardPage() {
     setIsDark(window.localStorage.getItem('ignou-coders-theme') === 'dark')
   }, [])
 
+  async function handleLogout() {
+    const { error } = await createSupabaseBrowserClient().auth.signOut()
+    if (error) throw error
+    router.replace('/auth')
+  }
+
   return (
     <StudentDashboard
-      onLogout={() => router.push('/')}
+      onLogout={handleLogout}
       isDark={isDark}
       toggleTheme={() => {
         setIsDark((curr) => {

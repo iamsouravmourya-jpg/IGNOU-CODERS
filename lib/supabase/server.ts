@@ -3,17 +3,19 @@ import { cookies } from 'next/headers'
 
 export async function createSupabaseServerClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!supabaseUrl || !publishableKey) {
+  if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.',
+      'Set NEXT_PUBLIC_SUPABASE_URL and a Supabase publishable or anon key.',
     )
   }
 
   const cookieStore = await cookies()
 
-  return createServerClient(supabaseUrl, publishableKey, {
+  return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll()

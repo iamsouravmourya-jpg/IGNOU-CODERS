@@ -35,7 +35,7 @@ function AuthForm() {
     const error = searchParams.get('error')
     if (error === 'configuration') {
       setErrorMessage(
-        'Google sign-in is not configured yet. Add the Supabase URL and publishable key in Vercel.',
+        'Google sign-in is not configured yet. Check the Supabase URL and anon/publishable key in Vercel.',
       )
     } else if (error === 'oauth') {
       setErrorMessage('Google sign-in could not be completed. Please try again.')
@@ -70,7 +70,7 @@ function AuthForm() {
       if (error) throw error
     } catch {
       setErrorMessage(
-        'Could not start Google sign-in. Check the Supabase URL and publishable key in Vercel, then try again.',
+        'Could not start Google sign-in. Check the Supabase URL and anon/publishable key in Vercel, then try again.',
       )
       setIsSubmitting(false)
     }

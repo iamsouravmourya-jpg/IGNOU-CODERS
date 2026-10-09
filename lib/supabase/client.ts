@@ -4,13 +4,15 @@ import { createBrowserClient } from '@supabase/ssr'
 
 export function createSupabaseBrowserClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!supabaseUrl || !publishableKey) {
+  if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.',
+      'Set NEXT_PUBLIC_SUPABASE_URL and a Supabase publishable or anon key.',
     )
   }
 
-  return createBrowserClient(supabaseUrl, publishableKey)
+  return createBrowserClient(supabaseUrl, supabaseKey)
 }

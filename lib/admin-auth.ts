@@ -3,16 +3,22 @@ import { createHmac, createHash, timingSafeEqual } from 'node:crypto'
 export const ADMIN_SESSION_COOKIE = 'ignou_admin_session'
 export const ADMIN_SESSION_MAX_AGE = 60 * 60 * 12
 
+function getAdminPasscode() {
+  return process.env.ADMIN_PASSCODE || process.env.admin_passcode
+}
+
+function getAdminSessionSecret() {
+  return process.env.ADMIN_SESSION_SECRET || process.env.admin_session_secret
+}
+
 export function isAdminAuthConfigured() {
-  return Boolean(
-    process.env.ADMIN_PASSCODE &&
-      process.env.ADMIN_SESSION_SECRET &&
-      process.env.ADMIN_SESSION_SECRET.length >= 32,
-  )
+  const passcode = getAdminPasscode()
+  const secret = getAdminSessionSecret()
+  return Boolean(passcode && secret && secret.length >= 32)
 }
 
 export function verifyAdminPasscode(passcode: string) {
-  const expected = process.env.ADMIN_PASSCODE
+  const expected = getAdminPasscode()
   if (!expected) return false
 
   const actualHash = createHash('sha256').update(passcode).digest()
@@ -21,7 +27,7 @@ export function verifyAdminPasscode(passcode: string) {
 }
 
 export function createAdminSession() {
-  const secret = process.env.ADMIN_SESSION_SECRET
+  const secret = getAdminSessionSecret()
   if (!secret) throw new Error('ADMIN_SESSION_SECRET is not configured.')
 
   const issuedAt = Math.floor(Date.now() / 1000).toString()
@@ -30,7 +36,7 @@ export function createAdminSession() {
 }
 
 export function isValidAdminSession(token: string | undefined) {
-  const secret = process.env.ADMIN_SESSION_SECRET
+  const secret = getAdminSessionSecret()
   if (!secret || !token) return false
 
   const [issuedAt, providedSignature, extra] = token.split('.')

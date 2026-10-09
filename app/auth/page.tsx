@@ -7,7 +7,6 @@ import {
   Lock,
   Mail,
   Moon,
-  Sparkles,
   Sun,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -20,9 +19,9 @@ function AuthForm() {
   const initialMode = searchParams.get('mode') === 'signin' ? 'signin' : 'signup'
 
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode)
-  const [email, setEmail] = useState('ignou.student2026@gmail.com')
-  const [password, setPassword] = useState('ignou@2026')
-  const [course, setCourse] = useState('BCA - Semester 3')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
@@ -43,7 +42,8 @@ function AuthForm() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Directly navigate to dashboard URL
+    if (isSubmitting) return
+    setIsSubmitting(true)
     router.push('/dashboard')
   }
 
@@ -55,7 +55,7 @@ function AuthForm() {
     >
       {/* Top Header */}
       <header className="border-b border-[#e1e7ef] bg-white/80 backdrop-blur-md dark:border-[#2a3b50] dark:bg-[#131e2d]/90">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8 sm:py-4">
           <Link
             href="/"
             className="group inline-flex items-center gap-3 transition"
@@ -67,7 +67,7 @@ function AuthForm() {
                 className="size-full object-contain"
               />
             </span>
-            <span className="brand-name text-sm font-bold tracking-[0.1em] text-[#172333] dark:text-[#edf3fb]">
+            <span className="brand-name text-xs font-bold tracking-[0.08em] text-[#172333] dark:text-[#edf3fb] sm:text-sm sm:tracking-[0.1em]">
               IGNOU CODERS
             </span>
           </Link>
@@ -78,7 +78,7 @@ function AuthForm() {
               className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e1ec] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] dark:hover:text-[#61c5ff] sm:text-sm"
             >
               <ArrowLeft className="size-3.5" />
-              <span>Back to Home</span>
+              <span className="hidden sm:inline">Back to Home</span>
             </Link>
             <button
               type="button"
@@ -93,8 +93,8 @@ function AuthForm() {
       </header>
 
       {/* Main Centered Auth Form */}
-      <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
-        <div className="w-full max-w-md rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-xl dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-8">
+      <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
+        <div className="w-full max-w-md rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-xl dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-8">
           {/* Card Header */}
           <div className="mb-6 flex items-center gap-3">
             <span className="flex size-12 items-center justify-center rounded-xl bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
@@ -115,7 +115,8 @@ function AuthForm() {
             <button
               type="button"
               onClick={() => setMode('signup')}
-              className={`flex-1 rounded-lg py-2 text-xs font-semibold transition ${
+              aria-pressed={mode === 'signup'}
+              className={`min-h-11 flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                 mode === 'signup'
                   ? 'bg-white text-[#087fce] shadow-xs dark:bg-[#1e2f47] dark:text-[#61c5ff]'
                   : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8] dark:hover:text-[#edf3fb]'
@@ -126,7 +127,8 @@ function AuthForm() {
             <button
               type="button"
               onClick={() => setMode('signin')}
-              className={`flex-1 rounded-lg py-2 text-xs font-semibold transition ${
+              aria-pressed={mode === 'signin'}
+              className={`min-h-11 flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                 mode === 'signin'
                   ? 'bg-white text-[#087fce] shadow-xs dark:bg-[#1e2f47] dark:text-[#61c5ff]'
                   : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8] dark:hover:text-[#edf3fb]'
@@ -136,31 +138,24 @@ function AuthForm() {
             </button>
           </div>
 
-          {/* Auto-filled Demo Info Notice */}
-          <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-[#eef7ff] p-3 text-xs text-[#185d91] dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-[#93c5fd]">
-            <Sparkles className="mt-0.5 size-4 shrink-0 text-[#087fce] dark:text-[#61c5ff]" />
-            <span>
-              <strong>Demo credentials pre-filled!</strong> Ek click me direct{' '}
-              <code className="font-mono font-semibold">/dashboard</code> par pahunchne ke liye niche button dabayein.
-            </span>
-          </div>
-
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
-                IGNOU Enrollment / Email ID
+                Email ID
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#647083] dark:text-[#94a3b8]">
                   <Mail className="size-4" />
                 </span>
                 <input
-                  type="text"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
                   required
-                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-2.5 pl-9 pr-3 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  className="min-h-12 w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-3 pl-9 pr-3 text-base font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb] sm:text-sm"
                 />
               </div>
             </div>
@@ -177,44 +172,32 @@ function AuthForm() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   required
-                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-2.5 pl-9 pr-3 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  className="min-h-12 w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-3 pl-9 pr-3 text-base font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb] sm:text-sm"
                 />
               </div>
             </div>
 
-            {mode === 'signup' && (
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
-                  Current Program / Batch
-                </label>
-                <input
-                  type="text"
-                  value={course}
-                  onChange={(e) => setCourse(e.target.value)}
-                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
-                />
-              </div>
-            )}
-
             <button
               type="submit"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#087fce] py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0665aa] active:scale-[0.99] cursor-pointer"
+              disabled={isSubmitting}
+              className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#087fce] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0665aa] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75"
             >
-              <span>Enter Dashboard ({mode === 'signup' ? 'Sign Up' : 'Sign In'})</span>
+              <span>
+                {isSubmitting
+                  ? 'Opening dashboard...'
+                  : mode === 'signup'
+                    ? 'Sign up & continue'
+                    : 'Sign in & continue'}
+              </span>
               <ArrowRight className="size-4" />
             </button>
           </form>
-
-          {/* Direct Dashboard Link */}
-          <div className="mt-5 border-t border-[#f0f4f9] pt-4 text-center dark:border-[#2a3b50]">
-            <Link
-              href="/dashboard"
-              className="text-xs font-semibold text-[#087fce] hover:underline dark:text-[#61c5ff]"
-            >
-              Skip directly to /dashboard →
-            </Link>
-          </div>
+          <p className="mt-4 text-center text-xs leading-relaxed text-[#647083] dark:text-[#94a3b8]">
+            Student sign-in and sign-up are in demo mode; account verification is not connected yet.
+          </p>
         </div>
       </main>
     </div>

@@ -16,50 +16,22 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-
-export interface ClassItem {
-  id: string
-  title: string
-  youtubeUrl: string
-  notes: string
-  pdfUrl: string
-  dateAdded: string
-}
-
-const DEFAULT_CLASSES: ClassItem[] = [
-  {
-    id: '1',
-    title: 'MCS-011: Complete C Programming & Pointers Masterclass',
-    youtubeUrl: 'https://www.youtube.com/embed/KJgsSFOSQv0',
-    notes: 'In this class, we cover dynamic memory allocation (malloc, calloc, realloc), pointer arithmetic, structures, and previous year IGNOU lab important questions with viva explanations.',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    dateAdded: '2026-10-09',
-  },
-  {
-    id: '2',
-    title: 'MCS-012: Computer Organization - K-Maps & Logic Circuits',
-    youtubeUrl: 'https://www.youtube.com/embed/L_LUpnjgPso',
-    notes: 'Detailed notes on Karnaugh Maps (K-maps) simplification for 3 and 4 variables, combinational logic circuits, multiplexers, decoders, and flip-flops.',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    dateAdded: '2026-10-09',
-  },
-  {
-    id: '3',
-    title: 'MCS-013: Discrete Mathematics - Graphs & Relations',
-    youtubeUrl: 'https://www.youtube.com/embed/2SKn7HxDwIE',
-    notes: 'Equivalence relations, partial orders, graph theory basics, Eulerian and Hamiltonian graphs, trees, and recurrence relations solved problems.',
-    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    dateAdded: '2026-10-09',
-  },
-]
+import {
+  readClasses,
+  saveClasses,
+  toYouTubeEmbedUrl,
+  type ClassItem,
+} from '@/lib/classes'
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
   const [passcode, setPasscode] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [isDark, setIsDark] = useState(false)
+  const [storageError, setStorageError] = useState('')
 
   // Form states for adding new class
   const [title, setTitle] = useState('')
@@ -70,79 +42,137 @@ export default function AdminPage() {
 
   useEffect(() => {
     setIsDark(window.localStorage.getItem('ignou-coders-theme') === 'dark')
-    // Load existing classes from localStorage or defaults
-    const saved = window.localStorage.getItem('ignou_coders_classes')
-    if (saved) {
-      try {
-        setClasses(JSON.parse(saved))
-      } catch {
-        setClasses(DEFAULT_CLASSES)
-      }
-    } else {
-      setClasses(DEFAULT_CLASSES)
-      window.localStorage.setItem('ignou_coders_classes', JSON.stringify(DEFAULT_CLASSES))
-    }
-
-    // Check if already authed in session
-    if (window.sessionStorage.getItem('ignou_admin_auth') === 'true') {
-      setIsAuthenticated(true)
-    }
+    fetch('/api/admin/session')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Could not verify admin session.')
+        return (await response.json()) as {
+          configured: boolean
+          authenticated: boolean
+        }
+      })
+      .then(({ configured, authenticated }) => {
+        setIsAuthenticated(authenticated)
+        if (!configured) {
+          setErrorMsg(
+            'Admin login is not configured. Set ADMIN_PASSCODE and ADMIN_SESSION_SECRET in Vercel.',
+          )
+        }
+      })
+      .catch(() => setErrorMsg('Could not verify admin session. Please reload the page.'))
+      .finally(() => setAuthReady(true))
   }, [])
 
-  function handleLogin(e: React.FormEvent) {
+  useEffect(() => {
+    if (!isAuthenticated) return
+    try {
+      setClasses(readClasses())
+      setStorageError('')
+    } catch {
+      setStorageError('Could not read saved classes from this browser.')
+    }
+  }, [isAuthenticated])
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    // Admin passcode: admin123 or ignou2026
-    if (passcode === 'admin123' || passcode === 'ignou2026') {
+    setErrorMsg('')
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode }),
+      })
+      const result = (await response.json()) as { error?: string }
+      if (!response.ok) {
+        setErrorMsg(result.error ?? 'Admin login failed.')
+        return
+      }
       setIsAuthenticated(true)
-      window.sessionStorage.setItem('ignou_admin_auth', 'true')
-      setErrorMsg('')
-    } else {
-      setErrorMsg('Incorrect admin passcode! Try: admin123')
+      setPasscode('')
+    } catch {
+      setErrorMsg('Could not reach the admin login service. Please try again.')
     }
   }
 
   function handleAddClass(e: React.FormEvent) {
     e.preventDefault()
-    if (!title || !youtubeUrl) return
+    if (!title.trim()) {
+      setStorageError('Enter a topic or class title.')
+      return
+    }
 
-    // Parse YouTube embed if watch link provided
-    let embed = youtubeUrl.trim()
-    if (embed.includes('watch?v=')) {
-      const vId = embed.split('watch?v=')[1]?.split('&')[0]
-      if (vId) embed = `https://www.youtube.com/embed/${vId}`
-    } else if (embed.includes('youtu.be/')) {
-      const vId = embed.split('youtu.be/')[1]?.split('?')[0]
-      if (vId) embed = `https://www.youtube.com/embed/${vId}`
+    const embed = toYouTubeEmbedUrl(youtubeUrl)
+    if (!embed) {
+      setStorageError('Enter a valid YouTube video, Shorts, or embed link.')
+      return
+    }
+    try {
+      const parsedPdfUrl = new URL(pdfUrl)
+      if (parsedPdfUrl.protocol !== 'https:') {
+        setStorageError('Use a secure https:// link for the PDF notes.')
+        return
+      }
+    } catch {
+      setStorageError('Enter a valid PDF notes URL.')
+      return
     }
 
     const newItem: ClassItem = {
       id: Date.now().toString(),
-      title,
+      title: title.trim(),
       youtubeUrl: embed,
-      notes: notes || 'No description notes provided for this class yet.',
-      pdfUrl: pdfUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      notes: notes.trim(),
+      pdfUrl: pdfUrl.trim(),
       dateAdded: new Date().toISOString().split('T')[0],
     }
 
     const updated = [newItem, ...classes]
-    setClasses(updated)
-    window.localStorage.setItem('ignou_coders_classes', JSON.stringify(updated))
+    try {
+      saveClasses(updated)
+      setClasses(updated)
+      setStorageError('')
+    } catch {
+      setStorageError('Could not save this class in this browser.')
+      return
+    }
 
     // Reset form
     setTitle('')
     setYoutubeUrl('')
     setNotes('')
     setPdfUrl('')
-    setSuccessMessage('Class and notes published successfully! Students can now view it.')
+    setSuccessMessage('Class saved in this browser. It will appear on its dashboard.')
     setTimeout(() => setSuccessMessage(''), 4000)
   }
 
   function handleDelete(id: string) {
     if (window.confirm('Are you sure you want to delete this class/notes?')) {
       const updated = classes.filter((c) => c.id !== id)
-      setClasses(updated)
-      window.localStorage.setItem('ignou_coders_classes', JSON.stringify(updated))
+      try {
+        saveClasses(updated)
+        setClasses(updated)
+        setStorageError('')
+      } catch {
+        setStorageError('Could not update saved classes in this browser.')
+      }
     }
+  }
+
+  async function handleLogout() {
+    try {
+      const response = await fetch('/api/admin/logout', { method: 'POST' })
+      if (!response.ok) throw new Error('Admin logout failed.')
+      setIsAuthenticated(false)
+    } catch {
+      setErrorMsg('Could not log out. Please try again.')
+    }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f6f8fb] text-sm text-[#647083]">
+        Checking admin access...
+      </div>
+    )
   }
 
   if (!isAuthenticated) {
@@ -180,14 +210,11 @@ export default function AdminPage() {
                   type="password"
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Enter admin pass (e.g. admin123)"
+                  placeholder="Enter the admin passcode"
                   required
                   className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-2.5 pl-9 pr-3 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
                 />
               </div>
-              <p className="mt-1.5 text-[11px] text-[#647083] dark:text-[#94a3b8]">
-                Hint for testing: <code className="font-mono font-bold text-[#087fce] dark:text-[#61c5ff]">admin123</code>
-              </p>
             </div>
 
             {errorMsg && (
@@ -253,10 +280,7 @@ export default function AdminPage() {
             </Link>
             <button
               type="button"
-              onClick={() => {
-                setIsAuthenticated(false)
-                window.sessionStorage.removeItem('ignou_admin_auth')
-              }}
+              onClick={handleLogout}
               className="rounded-full border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
             >
               Logout Admin
@@ -272,7 +296,7 @@ export default function AdminPage() {
             Admin Management Panel ⚡
           </h1>
           <p className="mt-1 text-sm text-[#647083] dark:text-[#94a3b8]">
-            Add new YouTube classes and study notes PDF links. Changes reflect instantly on all student dashboards.
+            Add YouTube classes and PDF notes. Content is stored in this browser for demo use.
           </p>
         </div>
 
@@ -281,6 +305,14 @@ export default function AdminPage() {
             <CheckCircle2 className="size-4 shrink-0" />
             <span>{successMessage}</span>
           </div>
+        )}
+        {storageError && (
+          <p
+            role="alert"
+            className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400"
+          >
+            {storageError}
+          </p>
         )}
 
         <div className="grid gap-8 lg:grid-cols-3">
@@ -313,10 +345,10 @@ export default function AdminPage() {
                   YouTube Video Link / Embed URL *
                 </label>
                 <input
-                  type="text"
+                  type="url"
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
-                  placeholder="e.g. https://www.youtube.com/watch?v=..."
+                  placeholder="https://www.youtube.com/watch?v=..."
                   required
                   className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
                 />
@@ -337,13 +369,14 @@ export default function AdminPage() {
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
-                  PDF Notes Download Link
+                  PDF Notes Download Link *
                 </label>
                 <input
-                  type="text"
+                  type="url"
                   value={pdfUrl}
                   onChange={(e) => setPdfUrl(e.target.value)}
-                  placeholder="e.g. https://example.com/notes.pdf"
+                  placeholder="https://example.com/notes.pdf"
+                  required
                   className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
                 />
               </div>
@@ -364,7 +397,7 @@ export default function AdminPage() {
               Published Classes & Notes ({classes.length})
             </h2>
             <p className="mt-0.5 text-xs text-[#647083] dark:text-[#94a3b8]">
-              All items currently live on student dashboard
+              These classes are saved only in this browser
             </p>
 
             <div className="mt-5 space-y-3">

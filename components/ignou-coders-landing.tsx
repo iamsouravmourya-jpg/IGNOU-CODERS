@@ -9,12 +9,14 @@ import {
   FileCode2,
   GraduationCap,
   MessageCircle,
+  Moon,
   Play,
   Target,
+  Sun,
   UserRound,
   Users,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
@@ -69,7 +71,35 @@ function Brand() {
           className="size-full object-contain"
         />
       </span>
+      <span className="text-sm font-bold tracking-[0.1em] text-[#172333]">
+        IGNOU CODERS
+      </span>
     </a>
+  )
+}
+
+function ThemeToggle({
+  isDark,
+  onToggle,
+}: {
+  isDark: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-pressed={isDark}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={onToggle}
+      className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[#d8e1ec] bg-white text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#245c9a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#168de2] sm:size-10"
+    >
+      {isDark ? (
+        <Sun aria-hidden="true" className="size-4" />
+      ) : (
+        <Moon aria-hidden="true" className="size-4" />
+      )}
+    </button>
   )
 }
 
@@ -91,8 +121,28 @@ function JoinLink({ children }: { children: ReactNode }) {
 }
 
 export function IgnouCodersLanding() {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    setIsDark(window.localStorage.getItem('ignou-coders-theme') === 'dark')
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
+
+  function toggleTheme() {
+    setIsDark((current) => {
+      const next = !current
+      window.localStorage.setItem('ignou-coders-theme', next ? 'dark' : 'light')
+      return next
+    })
+  }
+
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f6f8fb] text-[#172333]">
+    <main
+      className={`site-shell min-h-screen overflow-hidden bg-[#f6f8fb] text-[#172333]${isDark ? ' theme-dark' : ''}`}
+    >
       <header className="relative z-10 border-b border-[#e1e7ef] bg-[#f6f8fb]/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
           <Brand />
@@ -128,6 +178,7 @@ export function IgnouCodersLanding() {
             >
               Sign up <ArrowUpRight aria-hidden="true" className="size-4" />
             </a>
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
           </nav>
         </div>
       </header>

@@ -13,6 +13,10 @@
   --border: #e1e7ef;
 }
 
+:root.dark {
+  color-scheme: dark;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -20,5 +24,110 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+.site-shell {
+  transition:
+    background-color 240ms ease,
+    color 240ms ease;
+}
+
+.site-shell.theme-dark {
+  --dark-page: #0b1220;
+  --dark-surface: #111c2a;
+  --dark-card: #141f2e;
+  --dark-ink: #edf3fb;
+  --dark-muted: #a5b2c2;
+  --dark-line: #29374a;
+  background-color: var(--dark-page);
+  color: var(--dark-ink);
+}
+
+.theme-dark header,
+.theme-dark footer {
+  border-color: var(--dark-line);
+  background-color: var(--dark-surface);
+}
+
+.theme-dark header nav a:first-child,
+.theme-dark header nav a:nth-child(2),
+.theme-dark footer nav a {
+  color: var(--dark-muted);
+}
+
+.theme-dark header nav a:first-child:hover,
+.theme-dark header nav a:nth-child(2):hover,
+.theme-dark footer nav a:hover {
+  color: #71c6ff;
+}
+
+.theme-dark header nav a:nth-last-child(3),
+.theme-dark header nav button {
+  border-color: var(--dark-line);
+  background-color: var(--dark-surface);
+  color: var(--dark-ink);
+}
+
+.theme-dark header nav a:nth-last-child(3):hover,
+.theme-dark header nav button:hover {
+  border-color: #3b6388;
+  color: #71c6ff;
+}
+
+.theme-dark h1,
+.theme-dark h2,
+.theme-dark h3,
+.theme-dark footer .text-\[\#172333\] {
+  color: var(--dark-ink);
+}
+
+.theme-dark #top > div:first-child > p,
+.theme-dark #what-you-get p,
+.theme-dark #community p,
+.theme-dark footer p {
+  color: var(--dark-muted);
+}
+
+.theme-dark #top > div:first-child > div:first-child,
+.theme-dark #top > div:first-child > div:last-child {
+  border-color: var(--dark-line);
+  background-color: var(--dark-surface);
+}
+
+.theme-dark #what-you-get {
+  border-color: var(--dark-line);
+  background-color: var(--dark-surface);
+}
+
+.theme-dark #what-you-get article,
+.theme-dark #community article {
+  border-color: var(--dark-line);
+  background-color: var(--dark-card);
+}
+
+.theme-dark #community > div > div > a {
+  color: #71c6ff;
+}
+
+.theme-dark #community > div > div > article > div > span[role='img'] {
+  background-color: #1c3550;
+  color: #a8d8ff;
+}
+
+.theme-dark #community article p,
+.theme-dark #what-you-get article h3,
+.theme-dark #community article h3 {
+  color: var(--dark-ink);
+}
+
+.theme-dark footer > div > div:last-child {
+  border-color: var(--dark-line);
+  color: var(--dark-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-shell {
+    transition: none;
   }
 }

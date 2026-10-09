@@ -8,20 +8,16 @@ import {
   Code2,
   FileCode2,
   GraduationCap,
-  Lock,
-  Mail,
   MessageCircle,
   Moon,
   Play,
-  Sparkles,
   Sun,
   Target,
   UserRound,
   Users,
-  X,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
-import { StudentDashboard } from './student-dashboard'
 
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
@@ -127,11 +123,6 @@ function JoinLink({ children }: { children: ReactNode }) {
 
 export function IgnouCodersLanding() {
   const [isDark, setIsDark] = useState(false)
-  const [currentView, setCurrentView] = useState<'landing' | 'dashboard'>('landing')
-  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
-  const [authEmail, setAuthEmail] = useState('ignou.student2026@gmail.com')
-  const [authPassword, setAuthPassword] = useState('ignou@2026')
-  const [authCourse, setAuthCourse] = useState('BCA - Semester 3')
 
   useEffect(() => {
     setIsDark(window.localStorage.getItem('ignou-coders-theme') === 'dark')
@@ -147,26 +138,6 @@ export function IgnouCodersLanding() {
       window.localStorage.setItem('ignou-coders-theme', next ? 'dark' : 'light')
       return next
     })
-  }
-
-  function handleAuthSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setAuthModal(null)
-    setCurrentView('dashboard')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  if (currentView === 'dashboard') {
-    return (
-      <StudentDashboard
-        onBackToHome={() => {
-          setCurrentView('landing')
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }}
-        isDark={isDark}
-        toggleTheme={toggleTheme}
-      />
-    )
   }
 
   return (
@@ -193,20 +164,18 @@ export function IgnouCodersLanding() {
               Our people
             </a>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAuthModal('signin')}
+              <Link
+                href="/auth?mode=signin"
                 className="inline-flex min-h-9 items-center justify-center rounded-full border border-[#d8e1ec] px-3.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#245c9a] sm:min-h-10 sm:px-4 sm:text-sm cursor-pointer"
               >
                 Sign in
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthModal('signup')}
+              </Link>
+              <Link
+                href="/auth?mode=signup"
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#087fce] px-3.5 text-xs font-semibold text-white transition hover:bg-[#0665aa] sm:min-h-10 sm:gap-2 sm:px-5 sm:text-sm cursor-pointer"
               >
                 Sign up <ArrowUpRight aria-hidden="true" className="size-4" />
-              </button>
+              </Link>
             </div>
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
           </nav>
@@ -234,14 +203,13 @@ export function IgnouCodersLanding() {
             keep building at your own pace.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => setAuthModal('signup')}
+            <Link
+              href="/auth?mode=signup"
               className="group inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-[#087fce] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(22,113,186,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0665aa] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#168de2] cursor-pointer"
             >
               <MessageCircle aria-hidden="true" className="size-[18px]" />
               Sign up
-            </button>
+            </Link>
             <a
               href="#what-you-get"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[#526079] transition hover:text-[#245c9a]"
@@ -500,20 +468,18 @@ export function IgnouCodersLanding() {
               >
                 Community
               </a>
-              <button
-                type="button"
-                onClick={() => setAuthModal('signin')}
+              <Link
+                href="/auth?mode=signin"
                 className="text-left transition hover:text-[#245c9a] cursor-pointer"
               >
                 Sign in
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthModal('signup')}
+              </Link>
+              <Link
+                href="/auth?mode=signup"
                 className="text-left transition hover:text-[#245c9a] cursor-pointer"
               >
                 Sign up
-              </button>
+              </Link>
             </nav>
           </div>
           <div className="mt-7 border-t border-[#e6eaf0] pt-5 text-xs text-[#8790a0]">
@@ -521,142 +487,6 @@ export function IgnouCodersLanding() {
           </div>
         </div>
       </footer>
-
-      {/* Auth Modal (Dummy Sign In / Sign Up) */}
-      {authModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
-          onClick={() => setAuthModal(null)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setAuthModal(null)}
-              aria-label="Close dialog"
-              className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-full text-[#647083] transition hover:bg-[#f1f5f9] hover:text-[#172333] dark:text-[#94a3b8] dark:hover:bg-[#1e293b] dark:hover:text-[#edf3fb] cursor-pointer"
-            >
-              <X className="size-4" />
-            </button>
-
-            {/* Header */}
-            <div className="mb-5 flex items-center gap-3">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
-                <GraduationCap className="size-6" />
-              </span>
-              <div>
-                <h3 className="text-lg font-bold text-[#172333] dark:text-[#edf3fb]">
-                  {authModal === 'signup' ? 'Student Sign Up' : 'Student Sign In'}
-                </h3>
-                <p className="text-xs text-[#647083] dark:text-[#94a3b8]">
-                  IGNOU Coders Student Portal
-                </p>
-              </div>
-            </div>
-
-            {/* Auto-filled banner */}
-            <div className="mb-5 flex items-center gap-2 rounded-xl border border-blue-100 bg-[#eef7ff] px-3.5 py-2.5 text-xs text-[#185d91] dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-[#93c5fd]">
-              <Sparkles className="size-4 shrink-0 text-[#087fce] dark:text-[#61c5ff]" />
-              <span>
-                Demo credentials pre-filled! Click below to enter your dashboard directly.
-              </span>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
-                  IGNOU Enrollment / Email ID
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#647083] dark:text-[#94a3b8]">
-                    <Mail className="size-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-2.5 pl-9 pr-3 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
-                  Password
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#647083] dark:text-[#94a3b8]">
-                    <Lock className="size-4" />
-                  </span>
-                  <input
-                    type="password"
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-2.5 pl-9 pr-3 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
-                  />
-                </div>
-              </div>
-
-              {authModal === 'signup' && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
-                    Current Program / Batch
-                  </label>
-                  <input
-                    type="text"
-                    value={authCourse}
-                    onChange={(e) => setAuthCourse(e.target.value)}
-                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm font-medium text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#087fce] py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0665aa] active:scale-[0.99] cursor-pointer"
-              >
-                <span>Enter Dashboard</span>
-                <ArrowRight className="size-4" />
-              </button>
-            </form>
-
-            {/* Footer toggle */}
-            <div className="mt-5 text-center text-xs text-[#647083] dark:text-[#94a3b8]">
-              {authModal === 'signup' ? (
-                <span>
-                  Already registered?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setAuthModal('signin')}
-                    className="font-semibold text-[#087fce] hover:underline dark:text-[#61c5ff] cursor-pointer"
-                  >
-                    Sign in here
-                  </button>
-                </span>
-              ) : (
-                <span>
-                  Don&apos;t have an account yet?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setAuthModal('signup')}
-                    className="font-semibold text-[#087fce] hover:underline dark:text-[#61c5ff] cursor-pointer"
-                  >
-                    Create one now
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   )
 }

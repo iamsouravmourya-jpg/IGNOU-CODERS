@@ -49,8 +49,8 @@ function AuthForm() {
 
   return (
     <div
-      className={`site-shell flex min-h-screen flex-col bg-[#f6f8fb] text-[#172333] transition-colors duration-200 ${
-        isDark ? 'theme-dark dark bg-[#0d1421] text-[#edf3fb]' : ''
+      className={`flex min-h-screen flex-col bg-[#f6f8fb] text-[#172333] transition-colors duration-200 ${
+        isDark ? 'dark bg-[#0d1421] text-[#edf3fb]' : ''
       }`}
     >
       {/* Top Header */}
@@ -183,7 +183,7 @@ function AuthForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#087fce] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0665aa] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75"
+              className="mt-2 flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#087fce] px-4 py-3 text-sm font-bold !text-white shadow-md transition hover:bg-[#0665aa] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75"
             >
               <span>
                 {isSubmitting

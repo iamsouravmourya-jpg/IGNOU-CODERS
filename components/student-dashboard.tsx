@@ -1,28 +1,27 @@
 'use client'
 
 import {
-  ArrowLeft,
   BookOpen,
   GraduationCap,
-  LogIn,
+  LogOut,
   MessageCircle,
   Play,
   Video,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { CLASS_STORAGE_KEY, readClasses, type ClassItem } from '@/lib/classes'
+import { readClasses, type ClassItem } from '@/lib/classes'
 
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
 interface StudentDashboardProps {
-  onBackToHome: () => void
+  onLogout: () => void
   isDark?: boolean
   toggleTheme?: () => void
 }
 
 export function StudentDashboard({
-  onBackToHome,
+  onLogout,
   isDark = false,
 }: StudentDashboardProps) {
   const [classes, setClasses] = useState<ClassItem[]>([])
@@ -51,7 +50,7 @@ export function StudentDashboard({
     >
       <header className="border-b border-[#e1e7ef] bg-white/90 backdrop-blur-md dark:border-[#2a3b50] dark:bg-[#131e2d]/90">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
-          <Link href="/" className="flex items-center gap-3 transition">
+          <div className="flex items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dce5f1] bg-[#07111d] dark:border-[#2a3b50]">
               <img src="/logo.jpg" alt="IGNOU Coders logo" className="size-full object-contain" />
             </span>
@@ -63,24 +62,16 @@ export function StudentDashboard({
                 Student Dashboard · pyeater.in
               </span>
             </div>
-          </Link>
+          </div>
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={onBackToHome}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e1ec] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] dark:hover:text-[#61c5ff] sm:text-sm"
+              onClick={onLogout}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70 sm:text-sm"
             >
-              <ArrowLeft className="size-3.5" />
-              <span>Home</span>
+              <LogOut className="size-4" />
+              <span>Logout</span>
             </button>
-            <Link
-              href="/auth?mode=signin"
-              title="Sign in"
-              className="inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] px-3.5 py-1.5 text-xs font-semibold text-[#64748b] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:text-[#94a3b8] dark:hover:text-[#61c5ff]"
-            >
-              <LogIn className="size-4" />
-              Sign in
-            </Link>
           </div>
         </div>
       </header>

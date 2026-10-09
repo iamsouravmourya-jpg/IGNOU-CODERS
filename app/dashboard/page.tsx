@@ -14,7 +14,7 @@ export default function DashboardPage() {
 
   return (
     <StudentDashboard
-      onBackToHome={() => router.push('/')}
+      onLogout={() => router.push('/')}
       isDark={isDark}
       toggleTheme={() => {
         setIsDark((curr) => {

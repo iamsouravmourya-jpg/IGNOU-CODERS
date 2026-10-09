@@ -76,14 +76,14 @@
   background-color: var(--surface-bg) !important;
 }
 
-.site-shell header nav a:first-child,
-.site-shell header nav a:nth-child(2),
+.site-shell header nav > a:first-child,
+.site-shell header nav > a:nth-child(2),
 .site-shell footer nav a {
   color: var(--muted-ink);
 }
 
-.site-shell header nav a:first-child:hover,
-.site-shell header nav a:nth-child(2):hover,
+.site-shell header nav > a:first-child:hover,
+.site-shell header nav > a:nth-child(2):hover,
 .site-shell footer nav a:hover {
   color: var(--accent-color);
 }

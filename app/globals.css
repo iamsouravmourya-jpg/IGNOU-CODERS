@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+}
+
+:root {
+  color-scheme: light;
+  --background: #f6f8fb;
+  --foreground: #172333;
+  --border: #e1e7ef;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

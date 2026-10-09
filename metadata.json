@@ -1,0 +1,8 @@
+{
+  "name": "IGNOU CODERS",
+  "description": "A practical IGNOU coding community with recorded video lessons, study notes, live classes, and a supportive community.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

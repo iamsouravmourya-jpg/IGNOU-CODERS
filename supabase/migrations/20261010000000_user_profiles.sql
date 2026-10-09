@@ -8,6 +8,16 @@ alter table public.profiles enable row level security;
 revoke all on public.profiles from anon, authenticated;
 grant select on public.profiles to authenticated;
 
+insert into public.profiles (id, email)
+select id, email
+from auth.users
+where email is not null
+on conflict (id) do update
+  set email = excluded.email;
+
+drop policy if exists "Users can view their own profile"
+  on public.profiles;
+
 create policy "Users can view their own profile"
   on public.profiles
   for select
@@ -34,6 +44,8 @@ $$;
 
 revoke execute on function public.sync_auth_user_profile()
   from public, anon, authenticated;
+
+drop trigger if exists on_auth_user_profile_created on auth.users;
 
 create trigger on_auth_user_profile_created
   after insert or update of email on auth.users

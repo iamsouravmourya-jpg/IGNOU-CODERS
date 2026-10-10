@@ -10,6 +10,9 @@ This project is built with Next.js and integrates with Supabase for authenticati
 - Student sign-in and sign-up flows
 - Google OAuth support via Supabase
 - Protected dashboard area for authenticated users
+- Searchable student class dashboard with video lessons and study notes
+- Admin content studio for publishing and managing classes, PDFs, and cover images
+- Supabase database and private Storage persistence for published class content
 - Admin login flow with passcode + session secret
 - Responsive, mobile-friendly UI built with Next.js and Tailwind CSS
 
@@ -37,6 +40,8 @@ This project is built with Next.js and integrates with Supabase for authenticati
 ├── components/
 ├── lib/
 ├── public/
+├── supabase/
+│   └── migrations/
 ├── .env.example
 ├── next.config.mjs
 ├── package.json
@@ -87,9 +92,11 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 Class details are stored in the Supabase `public.classes` table. Uploaded PDF notes and cover images are stored in the private `class-assets` Storage bucket; signed-in students receive time-limited signed links. The bucket is created by the database migration.
 
-Apply the SQL migrations in `supabase/migrations` to your Supabase project before publishing classes. The admin API verifies the admin session before creating upload links or changing class records, and signed-in students can read published classes.
+Apply the SQL migrations in `supabase/migrations` to your Supabase project before publishing classes. For a new project, run the migration files in filename order in the Supabase SQL Editor (or apply them with the Supabase CLI). The classes table grants read access only to authenticated users; admin writes use the server-side service role key after the admin session is verified. Uploaded files live in a private bucket and are served to signed-in students using time-limited signed links.
 
-Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` and your deployment environment so the protected admin API can save classes and manage uploaded files. When the admin panel is opened after setup, it automatically copies that browser's existing locally saved classes and uploaded files into Supabase.
+Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` and your deployment environment so the protected admin API can save classes and manage uploaded files. When the admin panel is opened after setup, it copies that browser's existing locally saved classes and uploaded files into Supabase. Keep that browser's local data available until migration completes; the local copy is removed only after all legacy classes have migrated successfully.
+
+The admin content studio includes published-class search and content counts. Students can search classes by title or notes from the dashboard.
 
 ## Running the App
 
@@ -129,7 +136,7 @@ The admin authentication route uses `ADMIN_PASSCODE` and `ADMIN_SESSION_SECRET` 
 
 The app is ready to be deployed on platforms like Vercel or any Node.js-compatible hosting environment.
 
-For production deployment, make sure to set the required environment variables in your hosting provider and keep the admin secret secure.
+For production deployment, set the environment variables from `.env.example` in your hosting provider. In particular, configure `SUPABASE_SERVICE_ROLE_KEY` as a server-only secret (never prefix it with `NEXT_PUBLIC_`) and keep the admin passcode and session secret secure. Apply the Supabase migrations before deploying class content features.
 
 ## Contributing
 

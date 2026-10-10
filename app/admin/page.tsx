@@ -10,6 +10,7 @@ import {
   KeyRound,
   Lock,
   Plus,
+  Search,
   Trash2,
   Unlock,
   Upload,
@@ -93,7 +94,9 @@ export default function AdminPage() {
   const [isDark, setIsDark] = useState(false)
   const [storageError, setStorageError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true)
   const [deletingClassId, setDeletingClassId] = useState<string | null>(null)
+  const [classSearch, setClassSearch] = useState('')
 
   // Form states for adding new class
   const [title, setTitle] = useState('')
@@ -115,6 +118,17 @@ export default function AdminPage() {
   const [imageDataUrl, setImageDataUrl] = useState('')
   const [isImageDragging, setIsImageDragging] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const filteredClasses = classes.filter((item) => {
+    const query = classSearch.trim().toLowerCase()
+    return (
+      !query ||
+      item.title.toLowerCase().includes(query) ||
+      item.notes.toLowerCase().includes(query)
+    )
+  })
+  const classesWithPdf = classes.filter((item) => item.pdfUrl).length
+  const classesWithImages = classes.filter((item) => item.imageUrl).length
 
   useEffect(() => {
     setIsDark(window.localStorage.getItem('ignou-coders-theme') === 'dark')
@@ -141,6 +155,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!isAuthenticated) return
     let isMounted = true
+    setIsLoadingClasses(true)
 
     async function loadClasses() {
       try {
@@ -242,6 +257,8 @@ export default function AdminPage() {
             ? error.message
             : 'Could not load or migrate saved classes.',
         )
+      } finally {
+        if (isMounted) setIsLoadingClasses(false)
       }
     }
 
@@ -585,13 +602,59 @@ export default function AdminPage() {
 
       {/* Main Admin Content */}
       <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
-            Admin Management Panel ⚡
-          </h1>
-          <p className="mt-1 text-sm text-[#647083] dark:text-[#94a3b8]">
-            Add YouTube classes, upload or drop PDF notes, and attach cover images. Content appears on the Student Dashboard.
-          </p>
+        <div className="relative mb-7 overflow-hidden rounded-3xl border border-[#d9e7f5] bg-gradient-to-br from-white via-[#f0f7ff] to-[#e5f2ff] p-6 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43] sm:p-8">
+          <div className="pointer-events-none absolute -right-12 -top-24 size-56 rounded-full bg-[#70c6ff]/15 blur-3xl" />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#087fce]/10 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#087fce] shadow-xs dark:border-[#61c5ff]/20 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
+                <GraduationCap className="size-3.5" />
+                Learning hub
+              </span>
+              <h1 className="text-2xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
+                Content studio
+              </h1>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
+                Publish a class once. Students can access the video and notes from their dashboard.
+              </p>
+            </div>
+            <span className="relative inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-200/80 bg-white/80 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-900/50 dark:bg-[#10231f]/70 dark:text-emerald-400">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+              </span>
+              Changes sync to Supabase
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-7 grid gap-3 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
+              <Video className="size-5" />
+            </span>
+            <div>
+              <p className="text-xl font-bold text-[#172333] dark:text-[#edf3fb]">{classes.length}</p>
+              <p className="text-[11px] font-medium text-[#647083] dark:text-[#94a3b8]">Published classes</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/15 dark:text-purple-400">
+              <FileText className="size-5" />
+            </span>
+            <div>
+              <p className="text-xl font-bold text-[#172333] dark:text-[#edf3fb]">{classesWithPdf}</p>
+              <p className="text-[11px] font-medium text-[#647083] dark:text-[#94a3b8]">With PDF notes</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400">
+              <ImageIcon className="size-5" />
+            </span>
+            <div>
+              <p className="text-xl font-bold text-[#172333] dark:text-[#edf3fb]">{classesWithImages}</p>
+              <p className="text-[11px] font-medium text-[#647083] dark:text-[#94a3b8]">With cover images</p>
+            </div>
+          </div>
         </div>
 
         {successMessage && (
@@ -611,7 +674,7 @@ export default function AdminPage() {
 
         <div className="grid gap-8 lg:grid-cols-12">
           {/* Add Class Form (5 cols on large) */}
-          <div className="rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] lg:col-span-5">
+          <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-6 lg:col-span-5">
             <h2 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
               Add New Class & Notes
             </h2>
@@ -903,16 +966,39 @@ export default function AdminPage() {
           </div>
 
           {/* Manage Existing Classes List (7 cols on large) */}
-          <div className="rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] lg:col-span-7">
-            <h2 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
-              Published Classes & Notes ({classes.length})
-            </h2>
-            <p className="mt-0.5 text-xs text-[#647083] dark:text-[#94a3b8]">
-              Saved classes appear immediately on the student dashboard
-            </p>
+          <div className="rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:col-span-7">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
+                  Published content
+                </h2>
+                <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
+                  {classes.length} {classes.length === 1 ? 'class' : 'classes'} live on the student dashboard
+                </p>
+              </div>
+              {classes.length > 0 && (
+                <label className="relative block w-full sm:max-w-[240px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#94a3b8]" />
+                  <input
+                    type="search"
+                    value={classSearch}
+                    onChange={(event) => setClassSearch(event.target.value)}
+                    placeholder="Search published..."
+                    aria-label="Search published classes"
+                    className="w-full rounded-lg border border-[#d8e1ec] bg-[#f8fafc] py-2 pl-9 pr-3 text-xs text-[#172333] outline-none transition placeholder:text-[#94a3b8] focus:border-[#087fce] focus:ring-4 focus:ring-[#087fce]/10 dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb] dark:focus:border-[#61c5ff]"
+                  />
+                </label>
+              )}
+            </div>
 
             <div className="mt-5 space-y-3">
-              {classes.length === 0 ? (
+              {isLoadingClasses ? (
+                <div className="space-y-3" aria-label="Loading published classes">
+                  {[0, 1, 2].map((item) => (
+                    <div key={item} className="h-20 animate-pulse rounded-xl bg-[#f1f5f9] dark:bg-[#192638]" />
+                  ))}
+                </div>
+              ) : classes.length === 0 ? (
                 <div className="py-12 text-center">
                   <Video className="mx-auto size-8 text-[#94a3b8] mb-2" />
                   <p className="text-sm font-semibold text-[#647083] dark:text-[#94a3b8]">
@@ -922,22 +1008,29 @@ export default function AdminPage() {
                     Use the form on the left to add your first video and PDF notes!
                   </p>
                 </div>
+              ) : filteredClasses.length === 0 ? (
+                <div className="py-10 text-center">
+                  <Search className="mx-auto size-7 text-[#94a3b8]" />
+                  <p className="mt-2 text-sm font-semibold text-[#647083] dark:text-[#94a3b8]">
+                    No classes match that search.
+                  </p>
+                </div>
               ) : (
-                classes.map((cls, idx) => (
+                filteredClasses.map((cls) => (
                   <div
                     key={cls.id}
-                    className="flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#f8fafc] p-4 dark:border-[#2a3b50] dark:bg-[#192638] sm:flex-row sm:items-center sm:justify-between"
+                    className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3.5 transition hover:border-[#b7d8f4] hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-[#61c5ff]/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                   >
                     <div className="flex items-start gap-3 min-w-0">
                       {cls.imageUrl ? (
                         <img
                           src={cls.imageUrl}
                           alt={cls.title}
-                          className="size-12 shrink-0 rounded-lg object-cover border border-[#d8e1ec] dark:border-[#34445a]"
+                          className="size-12 shrink-0 rounded-xl object-cover border border-[#d8e1ec] dark:border-[#34445a]"
                         />
                       ) : (
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#087fce]/10 text-xs font-bold text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
-                          {String(idx + 1).padStart(2, '0')}
+                        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#087fce]/15 to-[#61c5ff]/10 text-[#087fce] dark:from-[#61c5ff]/20 dark:to-[#087fce]/10 dark:text-[#61c5ff]">
+                          <Video className="size-5" />
                         </span>
                       )}
 
@@ -950,8 +1043,8 @@ export default function AdminPage() {
                             {cls.notes}
                           </p>
                         )}
-                        <div className="mt-1 flex items-center gap-2 text-[10px] text-[#647083] dark:text-[#94a3b8]">
-                          <span>Added: {cls.dateAdded}</span>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-[#647083] dark:text-[#94a3b8]">
+                          <span>{cls.dateAdded}</span>
                           {cls.pdfUrl && (
                             <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                               • PDF attached {cls.pdfFileName ? `(${cls.pdfFileName})` : ''}

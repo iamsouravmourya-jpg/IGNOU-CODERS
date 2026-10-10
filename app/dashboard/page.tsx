@@ -10,8 +10,14 @@ export default function DashboardPage() {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    setIsDark(window.localStorage.getItem('ignou-coders-theme') === 'dark')
+    const dark = window.localStorage.getItem('ignou-coders-theme') === 'dark'
+    setIsDark(dark)
+    document.documentElement.classList.toggle('dark', dark)
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
 
   async function handleLogout() {
     const { error } = await createSupabaseBrowserClient().auth.signOut()

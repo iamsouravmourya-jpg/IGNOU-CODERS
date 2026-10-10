@@ -55,6 +55,9 @@ export default function ClassDetailsPage() {
                 Class video
               </span>
               <h1 className="text-xl font-bold sm:text-2xl">{classItem.title}</h1>
+              <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
+                Added: {classItem.dateAdded}
+              </p>
             </div>
 
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-lg">
@@ -76,20 +79,29 @@ export default function ClassDetailsPage() {
                   <div>
                     <h2 className="text-sm font-bold">Class study notes</h2>
                     <p className="text-xs text-[#647083] dark:text-[#94a3b8]">
-                      Notes and PDF download
+                      {classItem.pdfUrl
+                        ? classItem.pdfFileName
+                          ? `PDF: ${classItem.pdfFileName}`
+                          : 'Downloadable PDF Notes'
+                        : 'No PDF attached for this topic'}
                     </p>
                   </div>
                 </div>
-                <a
-                  href={classItem.pdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#087fce] px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#0665aa]"
-                >
-                  <Download className="size-4" />
-                  Download PDF Notes
-                </a>
+
+                {classItem.pdfUrl && (
+                  <a
+                    href={classItem.pdfUrl}
+                    download={classItem.pdfFileName || `${classItem.title.replace(/\s+/g, '_')}_Notes.pdf`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#087fce] px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#0665aa] active:scale-95"
+                  >
+                    <Download className="size-4" />
+                    Download PDF Notes
+                  </a>
+                )}
               </div>
+
               {classItem.notes && (
                 <div className="mt-5 rounded-2xl border border-[#e1e7ef] bg-[#f8fafc] p-5 text-sm leading-relaxed text-[#475569] dark:border-[#2a3b50] dark:bg-[#192638] dark:text-[#cbd5e1]">
                   <p className="whitespace-pre-line">{classItem.notes}</p>

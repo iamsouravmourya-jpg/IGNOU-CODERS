@@ -5,6 +5,8 @@ export interface ClassItem {
   notes: string
   pdfUrl: string
   dateAdded: string
+  imageUrl?: string
+  pdfFileName?: string
 }
 
 export const CLASS_STORAGE_KEY = 'ignou_coders_classes_v2'
@@ -19,7 +21,9 @@ function isClassItem(value: unknown): value is ClassItem {
     typeof item.youtubeUrl === 'string' &&
     typeof item.notes === 'string' &&
     typeof item.pdfUrl === 'string' &&
-    typeof item.dateAdded === 'string'
+    typeof item.dateAdded === 'string' &&
+    (item.imageUrl === undefined || typeof item.imageUrl === 'string') &&
+    (item.pdfFileName === undefined || typeof item.pdfFileName === 'string')
   )
 }
 
@@ -27,12 +31,15 @@ export function readClasses(): ClassItem[] {
   const saved = window.localStorage.getItem(CLASS_STORAGE_KEY)
   if (saved === null) return []
 
-  const parsed: unknown = JSON.parse(saved)
-  if (!Array.isArray(parsed) || !parsed.every(isClassItem)) {
-    throw new Error('Saved class data has an invalid format.')
+  try {
+    const parsed: unknown = JSON.parse(saved)
+    if (!Array.isArray(parsed) || !parsed.every(isClassItem)) {
+      return []
+    }
+    return parsed
+  } catch {
+    return []
   }
-
-  return parsed
 }
 
 export function saveClasses(classes: ClassItem[]) {

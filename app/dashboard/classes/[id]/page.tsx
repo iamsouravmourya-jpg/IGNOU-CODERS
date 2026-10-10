@@ -4,7 +4,7 @@ import { ArrowLeft, Download, FileText, Video } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { readClasses, type ClassItem } from '@/lib/classes'
+import type { ClassItem } from '@/lib/classes'
 
 export default function ClassDetailsPage() {
   const params = useParams<{ id: string }>()
@@ -13,14 +13,33 @@ export default function ClassDetailsPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    try {
-      const found = readClasses().find((item) => item.id === params.id)
-      setClassItem(found ?? null)
-    } catch {
-      setError('Could not load this class from this browser.')
-    } finally {
-      setIsLoaded(true)
+    const controller = new AbortController()
+
+    async function loadClass() {
+      try {
+        const response = await fetch('/api/classes', { signal: controller.signal })
+        const result = (await response.json()) as ClassItem[] | { error?: string }
+        if (!response.ok || !Array.isArray(result)) {
+          throw new Error(
+            !Array.isArray(result) ? result.error : 'Could not load classes.',
+          )
+        }
+        setClassItem(result.find((item) => item.id === params.id) ?? null)
+      } catch (loadError) {
+        if (!controller.signal.aborted) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'Could not load this class from the server.',
+          )
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoaded(true)
+      }
     }
+
+    loadClass()
+    return () => controller.abort()
   }, [params.id])
 
   return (
@@ -44,7 +63,7 @@ export default function ClassDetailsPage() {
           <div className="rounded-2xl border border-[#dce5f1] bg-white p-8 text-center dark:border-[#2a3b50] dark:bg-[#131e2d]">
             <h1 className="text-xl font-bold">Class not found</h1>
             <p className="mt-2 text-sm text-[#647083] dark:text-[#94a3b8]">
-              This class is not saved in this browser.
+              This class could not be found on the server.
             </p>
           </div>
         ) : (

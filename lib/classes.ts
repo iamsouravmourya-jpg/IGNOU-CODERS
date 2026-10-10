@@ -7,9 +7,25 @@ export interface ClassItem {
   dateAdded: string
   imageUrl?: string
   pdfFileName?: string
+  imageStoragePath?: string
+  pdfStoragePath?: string
 }
 
 export const CLASS_STORAGE_KEY = 'ignou_coders_classes_v2'
+export const CLASS_ASSETS_BUCKET = 'class-assets'
+
+export interface ClassDatabaseRow {
+  id: string
+  title: string
+  youtube_url: string
+  notes: string
+  pdf_url: string
+  pdf_file_name: string | null
+  pdf_storage_path: string | null
+  image_url: string | null
+  image_storage_path: string | null
+  date_added: string
+}
 
 function isClassItem(value: unknown): value is ClassItem {
   if (!value || typeof value !== 'object') return false
@@ -23,7 +39,11 @@ function isClassItem(value: unknown): value is ClassItem {
     typeof item.pdfUrl === 'string' &&
     typeof item.dateAdded === 'string' &&
     (item.imageUrl === undefined || typeof item.imageUrl === 'string') &&
-    (item.pdfFileName === undefined || typeof item.pdfFileName === 'string')
+    (item.pdfFileName === undefined || typeof item.pdfFileName === 'string') &&
+    (item.imageStoragePath === undefined ||
+      typeof item.imageStoragePath === 'string') &&
+    (item.pdfStoragePath === undefined ||
+      typeof item.pdfStoragePath === 'string')
   )
 }
 
@@ -42,8 +62,19 @@ export function readClasses(): ClassItem[] {
   }
 }
 
-export function saveClasses(classes: ClassItem[]) {
-  window.localStorage.setItem(CLASS_STORAGE_KEY, JSON.stringify(classes))
+export function classFromDatabase(row: ClassDatabaseRow): ClassItem {
+  return {
+    id: row.id,
+    title: row.title,
+    youtubeUrl: row.youtube_url,
+    notes: row.notes,
+    pdfUrl: row.pdf_url,
+    pdfFileName: row.pdf_file_name ?? undefined,
+    pdfStoragePath: row.pdf_storage_path ?? undefined,
+    imageUrl: row.image_url ?? undefined,
+    imageStoragePath: row.image_storage_path ?? undefined,
+    dateAdded: row.date_added,
+  }
 }
 
 export function toYouTubeEmbedUrl(input: string): string | null {

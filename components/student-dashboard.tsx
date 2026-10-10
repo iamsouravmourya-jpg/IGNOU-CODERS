@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { readClasses, type ClassItem } from '@/lib/classes'
+import type { ClassItem } from '@/lib/classes'
 
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
@@ -31,20 +31,36 @@ export function StudentDashboard({
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [storageError, setStorageError] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true)
 
   useEffect(() => {
-    function loadClasses() {
+    const controller = new AbortController()
+
+    async function loadClasses() {
       try {
-        setClasses(readClasses())
+        const response = await fetch('/api/classes', { signal: controller.signal })
+        const result = (await response.json()) as ClassItem[] | { error?: string }
+        if (!response.ok || !Array.isArray(result)) {
+          throw new Error(
+            !Array.isArray(result) ? result.error : 'Could not load classes.',
+          )
+        }
+        setClasses(result)
         setStorageError('')
-      } catch {
-        setStorageError('Could not load saved classes from this browser.')
+      } catch (error) {
+        if (controller.signal.aborted) return
+        setStorageError(
+          error instanceof Error
+            ? error.message
+            : 'Could not load classes from the server.',
+        )
+      } finally {
+        if (!controller.signal.aborted) setIsLoadingClasses(false)
       }
     }
 
     loadClasses()
-    window.addEventListener('storage', loadClasses)
-    return () => window.removeEventListener('storage', loadClasses)
+    return () => controller.abort()
   }, [])
 
   async function handleLogout() {
@@ -150,6 +166,10 @@ export function StudentDashboard({
         {storageError ? (
           <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {storageError}
+          </p>
+        ) : isLoadingClasses ? (
+          <p className="rounded-xl border border-[#dce5f1] bg-white p-8 text-center text-sm text-[#647083] dark:border-[#2a3b50] dark:bg-[#131e2d] dark:text-[#94a3b8]">
+            Loading classes...
           </p>
         ) : classes.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-white px-6 py-16 text-center dark:border-[#34445a] dark:bg-[#131e2d]">

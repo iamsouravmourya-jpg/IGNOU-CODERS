@@ -77,9 +77,19 @@ ADMIN_SESSION_SECRET=your-long-random-secret
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
 > The app also accepts lowercase aliases for admin environment variables if your deployment already uses them.
+> Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Never expose it through a `NEXT_PUBLIC_` variable.
+
+## Class Content Storage
+
+Class details are stored in the Supabase `public.classes` table. Uploaded PDF notes and cover images are stored in the private `class-assets` Storage bucket; signed-in students receive time-limited signed links. The bucket is created by the database migration.
+
+Apply the SQL migrations in `supabase/migrations` to your Supabase project before publishing classes. The admin API verifies the admin session before creating upload links or changing class records, and signed-in students can read published classes.
+
+Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` and your deployment environment so the protected admin API can save classes and manage uploaded files. When the admin panel is opened after setup, it automatically copies that browser's existing locally saved classes and uploaded files into Supabase.
 
 ## Running the App
 

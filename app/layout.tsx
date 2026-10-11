@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { SessionProvider } from '@/lib/session-store'
 import './globals.css'
 
 const siteUrl = 'https://www.pyeater.in'
@@ -54,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   )

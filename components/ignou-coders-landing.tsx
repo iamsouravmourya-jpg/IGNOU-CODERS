@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useSession } from '@/lib/session-store'
 
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
@@ -96,6 +97,7 @@ function ThemeToggle({
 }
 
 export function IgnouCodersLanding() {
+  const { isAuthenticated, profile } = useSession()
   const [isDark, setIsDark] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
 
@@ -159,18 +161,30 @@ export function IgnouCodersLanding() {
 
           {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/auth"
-              className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-sky-300 hover:bg-slate-50 hover:text-sky-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:text-sky-400 sm:min-h-10 sm:px-4 sm:text-sm cursor-pointer"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/auth"
-              className="inline-flex min-h-9 items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 text-xs font-bold text-white shadow-md shadow-sky-500/20 transition hover:brightness-105 active:scale-95 sm:min-h-10 sm:px-4 sm:text-sm cursor-pointer"
-            >
-              Sign Up
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 text-xs font-bold text-white shadow-md shadow-sky-500/20 transition hover:brightness-105 active:scale-95 sm:min-h-10 sm:px-4 sm:text-sm cursor-pointer"
+              >
+                <GraduationCap className="size-4" />
+                <span>Dashboard</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/auth"
+                  className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-sky-300 hover:bg-slate-50 hover:text-sky-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:text-sky-400 sm:min-h-10 sm:px-4 sm:text-sm cursor-pointer"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth"
+                  className="inline-flex min-h-9 items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 text-xs font-bold text-white shadow-md shadow-sky-500/20 transition hover:brightness-105 active:scale-95 sm:min-h-10 sm:px-4 sm:text-sm cursor-pointer"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
           </div>
         </div>
@@ -214,11 +228,11 @@ export function IgnouCodersLanding() {
                 </a>
 
                 <Link
-                  href="/auth"
+                  href={isAuthenticated ? '/dashboard' : '/auth'}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-sky-400 hover:bg-slate-50 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-400 cursor-pointer"
                 >
                   <GraduationCap className="size-4.5 text-sky-500" />
-                  <span>Sign In</span>
+                  <span>{isAuthenticated ? 'Open Dashboard' : 'Sign In'}</span>
                 </Link>
               </div>
 

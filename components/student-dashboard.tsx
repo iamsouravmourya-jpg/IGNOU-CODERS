@@ -15,6 +15,7 @@ import {
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { ClassItem } from '@/lib/classes'
+import { useSession } from '@/lib/session-store'
 
 const WHATSAPP_LINK = 'https://chat.whatsapp.com/JsS2aKiVHXhKCzJ1B5a7rB'
 
@@ -29,6 +30,7 @@ export function StudentDashboard({
   isDark = false,
   toggleTheme,
 }: StudentDashboardProps) {
+  const { profile } = useSession()
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [storageError, setStorageError] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -109,6 +111,13 @@ export function StudentDashboard({
           </Link>
 
           <div className="flex items-center gap-2.5">
+            {profile?.email && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[#d8e1ec] bg-white px-3 py-1.5 text-xs font-semibold text-[#475569] shadow-xs dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1]">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="max-w-[150px] truncate">{profile.name || profile.email}</span>
+              </span>
+            )}
+
             {toggleTheme && (
               <button
                 type="button"
@@ -142,10 +151,16 @@ export function StudentDashboard({
             <div className="relative">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#087fce]/10 bg-white/80 px-3 py-1 text-xs font-semibold text-[#087fce] shadow-xs dark:border-[#61c5ff]/20 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
                 <GraduationCap className="size-3.5" />
-                <span>Your learning space</span>
+                <span>
+                  {profile?.email
+                    ? `Logged in · ${profile.name || profile.email}`
+                    : 'Your learning space'}
+                </span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
-                Classes &amp; Study Notes
+                {profile?.name
+                  ? `Welcome back, ${profile.name}! 👋`
+                  : 'Classes & Study Notes'}
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
                 Open a topic to watch its class video and download the notes.

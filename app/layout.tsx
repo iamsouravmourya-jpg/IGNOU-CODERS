@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { SessionProvider } from '@/lib/session-store'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const siteUrl = 'https://www.pyeater.in'
@@ -56,6 +57,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <SessionProvider>{children}</SessionProvider>
+        <Analytics />
       </body>
     </html>
   )

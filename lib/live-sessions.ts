@@ -23,17 +23,7 @@ export interface LiveSessionDatabaseRow {
   created_at: string
 }
 
-export const DEFAULT_LIVE_SESSIONS: LiveSessionItem[] = [
-  {
-    id: 'live-1',
-    title: 'MCS-011: Live Logic Building & Doubt Clearing Session',
-    meetUrl: 'https://meet.google.com/new',
-    scheduledTime: 'Saturday · 7:30 PM IST',
-    imageUrl: '/images/hero_coding_setup_1791589155768.jpg',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-]
+export const DEFAULT_LIVE_SESSIONS: LiveSessionItem[] = []
 
 export function liveSessionFromDatabase(row: LiveSessionDatabaseRow): LiveSessionItem {
   return {
@@ -49,19 +39,22 @@ export function liveSessionFromDatabase(row: LiveSessionDatabaseRow): LiveSessio
 }
 
 export function readLiveSessions(): LiveSessionItem[] {
-  if (typeof window === 'undefined') return DEFAULT_LIVE_SESSIONS
+  if (typeof window === 'undefined') return []
 
   const saved = window.localStorage.getItem(LIVE_SESSIONS_STORAGE_KEY)
-  if (!saved) return DEFAULT_LIVE_SESSIONS
+  if (!saved) return []
 
   try {
     const parsed = JSON.parse(saved)
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed
+    if (Array.isArray(parsed)) {
+      // Filter out any stale dummy sessions
+      return parsed.filter(
+        (item) => item.id !== 'live-1' && !item.title?.includes('MCS-011: Live Logic Building'),
+      )
     }
-    return DEFAULT_LIVE_SESSIONS
+    return []
   } catch {
-    return DEFAULT_LIVE_SESSIONS
+    return []
   }
 }
 

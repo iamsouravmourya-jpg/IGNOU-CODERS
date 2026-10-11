@@ -109,9 +109,12 @@ export function StudentDashboard({
         })
         if (response.ok) {
           const result = (await response.json()) as LiveSessionItem[]
-          if (Array.isArray(result) && result.length > 0) {
-            setLiveSessions(result)
-            saveLiveSessionsLocally(result)
+          if (Array.isArray(result)) {
+            const clean = result.filter(
+              (item) => item.id !== 'live-1' && !item.title?.includes('MCS-011: Live Logic Building'),
+            )
+            setLiveSessions(clean)
+            saveLiveSessionsLocally(clean)
             return
           }
         }

@@ -302,8 +302,13 @@ export default function AdminPage() {
         if (response.ok) {
           const result = await response.json()
           if (Array.isArray(result) && isMounted) {
-            setLiveSessions(result)
-            saveLiveSessionsLocally(result)
+            const clean = result.filter(
+              (item: { id?: string; title?: string }) =>
+                item.id !== 'live-1' &&
+                !item.title?.includes('MCS-011: Live Logic Building'),
+            )
+            setLiveSessions(clean)
+            saveLiveSessionsLocally(clean)
             return
           }
         }

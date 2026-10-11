@@ -10,6 +10,7 @@ import {
   KeyRound,
   Lock,
   Plus,
+  Radio,
   Search,
   Trash2,
   Unlock,
@@ -26,6 +27,11 @@ import {
   toYouTubeEmbedUrl,
   type ClassItem,
 } from '@/lib/classes'
+import {
+  readLiveSessions,
+  saveLiveSessionsLocally,
+  type LiveSessionItem,
+} from '@/lib/live-sessions'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type UploadKind = 'pdf' | 'image'
@@ -103,6 +109,23 @@ export default function AdminPage() {
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [notes, setNotes] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
+  // Live sessions states
+  const [liveSessions, setLiveSessions] = useState<LiveSessionItem[]>([])
+  const [isLoadingLiveSessions, setIsLoadingLiveSessions] = useState(true)
+  const [isSavingLiveSession, setIsSavingLiveSession] = useState(false)
+  const [deletingLiveSessionId, setDeletingLiveSessionId] = useState<string | null>(null)
+
+  // Live session form states
+  const [liveTitle, setLiveTitle] = useState('')
+  const [liveMeetUrl, setLiveMeetUrl] = useState('')
+  const [liveTime, setLiveTime] = useState('')
+  const [liveImageMode, setLiveImageMode] = useState<'upload' | 'url'>('upload')
+  const [liveImageUrl, setLiveImageUrl] = useState('')
+  const [liveImageFile, setLiveImageFile] = useState<File | null>(null)
+  const [liveImageDataUrl, setLiveImageDataUrl] = useState('')
+  const [isLiveImageDragging, setIsLiveImageDragging] = useState(false)
+  const liveImageInputRef = useRef<HTMLInputElement>(null)
 
   // PDF handling states
   const [pdfInputMode, setPdfInputMode] = useState<'upload' | 'url'>('upload')
@@ -268,11 +291,44 @@ export default function AdminPage() {
     }
   }, [isAuthenticated])
 
+  useEffect(() => {
+    if (!isAuthenticated) return
+    let isMounted = true
+    setIsLoadingLiveSessions(true)
+
+    async function loadLiveSessions() {
+      try {
+        const response = await fetch('/api/admin/live-sessions')
+        if (response.ok) {
+          const result = await response.json()
+          if (Array.isArray(result) && isMounted) {
+            setLiveSessions(result)
+            saveLiveSessionsLocally(result)
+            return
+          }
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (isMounted) setIsLoadingLiveSessions(false)
+      }
+      if (isMounted) {
+        setLiveSessions(readLiveSessions())
+      }
+    }
+
+    loadLiveSessions()
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated])
+
   useEffect(
     () => () => {
       if (imageDataUrl.startsWith('blob:')) URL.revokeObjectURL(imageDataUrl)
+      if (liveImageDataUrl.startsWith('blob:')) URL.revokeObjectURL(liveImageDataUrl)
     },
-    [imageDataUrl],
+    [imageDataUrl, liveImageDataUrl],
   )
 
   async function handleLogin(e: React.FormEvent) {
@@ -463,6 +519,130 @@ export default function AdminPage() {
       )
     } finally {
       setDeletingClassId(null)
+    }
+  }
+
+  function handleLiveImageFileSelect(file: File) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setStorageError('Please select a valid image file (PNG, JPG, WebP) for the live session.')
+      return
+    }
+    setStorageError('')
+    setLiveImageFile(file)
+    setLiveImageDataUrl(URL.createObjectURL(file))
+  }
+
+  async function handleAddLiveSession(e: React.FormEvent) {
+    e.preventDefault()
+    if (isSavingLiveSession) return
+
+    if (!liveTitle.trim()) {
+      setStorageError('Enter a live session topic/title.')
+      return
+    }
+
+    const meetLink = liveMeetUrl.trim()
+    if (!meetLink) {
+      setStorageError('Enter a valid Google Meet link.')
+      return
+    }
+
+    setIsSavingLiveSession(true)
+    setStorageError('')
+    const uploadedPaths: string[] = []
+
+    try {
+      let imageStoragePath: string | undefined
+      let finalImageUrl: string | undefined
+
+      if (liveImageMode === 'upload' && liveImageFile) {
+        const uploaded = await uploadClassAsset(liveImageFile, 'image')
+        uploadedPaths.push(uploaded.path)
+        imageStoragePath = uploaded.path
+      } else if (liveImageMode === 'url' && liveImageUrl.trim()) {
+        try {
+          const parsed = new URL(liveImageUrl.trim())
+          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            finalImageUrl = liveImageUrl.trim()
+          }
+        } catch {
+          setStorageError('Please enter a valid image URL.')
+          setIsSavingLiveSession(false)
+          return
+        }
+      }
+
+      const newItem: LiveSessionItem = {
+        id: crypto.randomUUID(),
+        title: liveTitle.trim(),
+        meetUrl: meetLink,
+        scheduledTime: liveTime.trim() || 'Today · Live Session',
+        imageUrl: finalImageUrl,
+        imageStoragePath,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      }
+
+      const response = await fetch('/api/admin/live-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem),
+      })
+
+      let savedSession = newItem
+      if (response.ok) {
+        const saved = await response.json()
+        if (saved && saved.id) savedSession = saved
+      }
+
+      const updated = [savedSession, ...liveSessions]
+      setLiveSessions(updated)
+      saveLiveSessionsLocally(updated)
+
+      setLiveTitle('')
+      setLiveMeetUrl('')
+      setLiveTime('')
+      setLiveImageUrl('')
+      setLiveImageFile(null)
+      setLiveImageDataUrl('')
+      if (liveImageInputRef.current) liveImageInputRef.current.value = ''
+
+      setSuccessMessage('Live session published! Student dashboard notification has been triggered.')
+      setTimeout(() => setSuccessMessage(''), 4000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not publish live session.'
+      try {
+        await removeUploadedAssets(uploadedPaths)
+      } catch {}
+      setStorageError(message)
+    } finally {
+      setIsSavingLiveSession(false)
+    }
+  }
+
+  async function handleDeleteLiveSession(id: string) {
+    if (!window.confirm('Are you sure you want to delete this live session?')) return
+
+    setDeletingLiveSessionId(id)
+    setStorageError('')
+    try {
+      const response = await fetch(`/api/admin/live-sessions?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.error || 'Could not delete live session.')
+      }
+
+      const updated = liveSessions.filter((s) => s.id !== id)
+      setLiveSessions(updated)
+      saveLiveSessionsLocally(updated)
+      setSuccessMessage('Live session deleted.')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : 'Could not delete live session.')
+    } finally {
+      setDeletingLiveSessionId(null)
     }
   }
 
@@ -1092,6 +1272,312 @@ export default function AdminPage() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* LIVE SESSIONS SECTION (GOOGLE MEET) */}
+        <div className="mt-14 border-t border-[#dce5f1] pt-10 dark:border-[#2a3b50]">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                  <Radio className="size-4 animate-pulse" />
+                </span>
+                <h2 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb]">
+                  Live Sessions Studio (Google Meet)
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
+                Add Google Meet link, session name, and photo. Students get an instant notification alert on their dashboard.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+              <span className="size-2 rounded-full bg-red-500 animate-ping" />
+              {liveSessions.length} {liveSessions.length === 1 ? 'Live Session' : 'Live Sessions'}
+            </span>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-12">
+            {/* Live Session Form (5 cols on lg) */}
+            <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-6 lg:col-span-5">
+              <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
+                Schedule New Live Session
+              </h3>
+              <p className="mt-0.5 text-xs text-[#647083] dark:text-[#94a3b8]">
+                Provide session name, Google Meet URL, and thumbnail photo
+              </p>
+
+              <form onSubmit={handleAddLiveSession} className="mt-5 space-y-4">
+                {/* 1. Name */}
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                    Session Name / Topic *
+                  </label>
+                  <input
+                    type="text"
+                    value={liveTitle}
+                    onChange={(e) => setLiveTitle(e.target.value)}
+                    placeholder="e.g. MCS-011: Live Logic Building & Doubt Session"
+                    required
+                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  />
+                </div>
+
+                {/* 2. Link (Google Meet) */}
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                    Google Meet Link *
+                  </label>
+                  <input
+                    type="url"
+                    value={liveMeetUrl}
+                    onChange={(e) => setLiveMeetUrl(e.target.value)}
+                    placeholder="https://meet.google.com/abc-defg-hij"
+                    required
+                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  />
+                </div>
+
+                {/* 3. Photo (Image) */}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                      Session Photo / Thumbnail (Optional)
+                    </label>
+                    <div className="flex items-center gap-1 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setLiveImageMode('upload')}
+                        className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                          liveImageMode === 'upload'
+                            ? 'bg-red-600 text-white'
+                            : 'text-[#647083] hover:text-red-600'
+                        }`}
+                      >
+                        Drop File
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLiveImageMode('url')}
+                        className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                          liveImageMode === 'url'
+                            ? 'bg-red-600 text-white'
+                            : 'text-[#647083] hover:text-red-600'
+                        }`}
+                      >
+                        URL Link
+                      </button>
+                    </div>
+                  </div>
+
+                  {liveImageMode === 'upload' ? (
+                    <div>
+                      <input
+                        ref={liveImageInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleLiveImageFileSelect(file)
+                        }}
+                      />
+
+                      {liveImageFile ? (
+                        <div className="relative rounded-xl border border-emerald-300 bg-emerald-50/50 p-2.5 dark:border-emerald-800 dark:bg-emerald-950/20">
+                          <div className="flex items-center gap-3">
+                            {liveImageDataUrl && (
+                              <img
+                                src={liveImageDataUrl}
+                                alt="Preview"
+                                className="size-12 rounded-lg object-cover"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                                {liveImageFile.name}
+                              </p>
+                              <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+                                {Math.round(liveImageFile.size / 1024)} KB · Photo ready
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLiveImageFile(null)
+                                setLiveImageDataUrl('')
+                                if (liveImageInputRef.current) liveImageInputRef.current.value = ''
+                              }}
+                              className="p-1 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault()
+                            setIsLiveImageDragging(true)
+                          }}
+                          onDragLeave={() => setIsLiveImageDragging(false)}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            setIsLiveImageDragging(false)
+                            const file = e.dataTransfer.files?.[0]
+                            if (file) handleLiveImageFileSelect(file)
+                          }}
+                          onClick={() => liveImageInputRef.current?.click()}
+                          className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed cursor-pointer transition ${
+                            isLiveImageDragging
+                              ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                              : 'border-[#d8e1ec] bg-[#f8fafc] hover:border-red-400 dark:border-[#34445a] dark:bg-[#192638]'
+                          }`}
+                        >
+                          <Upload className="size-5 text-[#94a3b8] mb-1.5" />
+                          <span className="text-xs font-bold text-[#314255] dark:text-[#cbd5e1]">
+                            Drop session photo here or click
+                          </span>
+                          <span className="text-[10px] text-[#94a3b8] mt-0.5">
+                            PNG, JPG or WebP
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="url"
+                      value={liveImageUrl}
+                      onChange={(e) => setLiveImageUrl(e.target.value)}
+                      placeholder="https://example.com/live-poster.jpg"
+                      className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                    />
+                  )}
+                </div>
+
+                {/* 4. Scheduled Time / Date */}
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                    Scheduled Time / Timing (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={liveTime}
+                    onChange={(e) => setLiveTime(e.target.value)}
+                    placeholder="e.g. Saturday · 7:30 PM IST or Today 8 PM"
+                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSavingLiveSession}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 py-3 text-sm font-bold text-white shadow-md shadow-red-500/20 transition hover:from-red-500 hover:to-rose-500 disabled:cursor-wait disabled:opacity-70 cursor-pointer"
+                >
+                  {isSavingLiveSession ? (
+                    <Upload className="size-4 animate-pulse" />
+                  ) : (
+                    <Radio className="size-4" />
+                  )}
+                  <span>{isSavingLiveSession ? 'Saving Live Session...' : 'Publish Live Session & Notify'}</span>
+                </button>
+              </form>
+            </div>
+
+            {/* Published Live Sessions Table / List (7 cols on lg) */}
+            <div className="rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:col-span-7">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
+                    Active Live Sessions
+                  </h3>
+                  <p className="mt-0.5 text-xs text-[#647083] dark:text-[#94a3b8]">
+                    Visible on student dashboard with instant Google Meet link
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {isLoadingLiveSessions ? (
+                  <div className="space-y-3">
+                    {[0, 1].map((item) => (
+                      <div key={item} className="h-20 animate-pulse rounded-xl bg-[#f1f5f9] dark:bg-[#192638]" />
+                    ))}
+                  </div>
+                ) : liveSessions.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Radio className="mx-auto size-8 text-[#94a3b8] mb-2" />
+                    <p className="text-sm font-semibold text-[#647083] dark:text-[#94a3b8]">
+                      No live sessions published yet.
+                    </p>
+                    <p className="text-xs text-[#94a3b8] mt-0.5">
+                      Use the form on the left to add a Google Meet link and session name!
+                    </p>
+                  </div>
+                ) : (
+                  liveSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3.5 transition hover:border-red-300 hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-red-500/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        {session.imageUrl ? (
+                          <img
+                            src={session.imageUrl}
+                            alt={session.title}
+                            className="size-12 shrink-0 rounded-xl object-cover border border-[#d8e1ec] dark:border-[#34445a]"
+                          />
+                        ) : (
+                          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                            <Radio className="size-5" />
+                          </span>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] truncate">
+                            {session.title}
+                          </h4>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[#647083] dark:text-[#94a3b8]">
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                              <Video className="size-3" />
+                              Google Meet
+                            </span>
+                            {session.scheduledTime && (
+                              <span>• {session.scheduledTime}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <a
+                          href={session.meetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 cursor-pointer shadow-xs"
+                        >
+                          <span>Test Meet</span>
+                          <ExternalLink className="size-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLiveSession(session.id)}
+                          disabled={deletingLiveSessionId === session.id}
+                          title="Delete live session"
+                          className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-60 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
+                        >
+                          {deletingLiveSessionId === session.id ? (
+                            <Upload className="size-4 animate-pulse" />
+                          ) : (
+                            <Trash2 className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

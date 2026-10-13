@@ -2,8 +2,15 @@
 
 import {
   ArrowLeft,
+  Check,
   CheckCircle2,
+  Clock,
+  Code2,
+  Copy,
+  Download,
   ExternalLink,
+  Eye,
+  FileCode,
   FileText,
   GraduationCap,
   Image as ImageIcon,
@@ -33,6 +40,12 @@ import {
   saveLiveSessionsLocally,
   type LiveSessionItem,
 } from '@/lib/live-sessions'
+import {
+  type ProjectSubmission,
+  formatTimeRemaining,
+  readProjectsLocally,
+  saveProjectsLocally,
+} from '@/lib/projects'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type UploadKind = 'pdf' | 'image'
@@ -172,6 +185,18 @@ export default function AdminPage() {
   const editLiveImageInputRef = useRef<HTMLInputElement>(null)
   const [isSavingEditLiveSession, setIsSavingEditLiveSession] = useState(false)
   const [editLiveError, setEditLiveError] = useState('')
+
+  // Admin navigation tab
+  const [adminTab, setAdminTab] = useState<'classes' | 'live' | 'projects'>('classes')
+
+  // Project submissions review states
+  const [adminProjects, setAdminProjects] = useState<ProjectSubmission[]>([])
+  const [isLoadingAdminProjects, setIsLoadingAdminProjects] = useState(true)
+  const [adminProjectSearch, setAdminProjectSearch] = useState('')
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
+  const [previewAdminProject, setPreviewAdminProject] = useState<ProjectSubmission | null>(null)
+  const [previewAdminTab, setPreviewAdminTab] = useState<'preview' | 'code'>('preview')
+  const [adminCopiedCode, setAdminCopiedCode] = useState(false)
 
   const filteredClasses = classes.filter((item) => {
     const query = classSearch.trim().toLowerCase()
@@ -358,6 +383,52 @@ export default function AdminPage() {
       isMounted = false
     }
   }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    let isMounted = true
+    setIsLoadingAdminProjects(true)
+
+    async function loadAdminProjects() {
+      try {
+        const response = await fetch('/api/admin/projects')
+        if (response.ok) {
+          const result = (await response.json()) as ProjectSubmission[]
+          if (Array.isArray(result) && isMounted) {
+            setAdminProjects(result)
+            return
+          }
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (isMounted) setIsLoadingAdminProjects(false)
+      }
+      if (isMounted) {
+        setAdminProjects(readProjectsLocally())
+      }
+    }
+
+    loadAdminProjects()
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated])
+
+  async function handleDeleteAdminProject(id: string) {
+    if (!confirm('Are you sure you want to delete this project submission?')) return
+    setDeletingProjectId(id)
+    try {
+      await fetch(`/api/admin/projects?id=${id}`, { method: 'DELETE' })
+    } catch {
+      // Local fallback
+    }
+    const updated = adminProjects.filter((p) => p.id !== id)
+    setAdminProjects(updated)
+    saveProjectsLocally(updated)
+    if (previewAdminProject?.id === id) setPreviewAdminProject(null)
+    setDeletingProjectId(null)
+  }
 
   useEffect(
     () => () => {
@@ -1061,9 +1132,157 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Main Admin Content */}
-      <main className="mx-auto max-w-6xl px-3.5 py-5 sm:px-8 sm:py-10">
-        <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#d9e7f5] bg-gradient-to-br from-white via-[#f0f7ff] to-[#e5f2ff] p-4.5 sm:p-8 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43]">
+      {/* Main Admin Content with Sidebar */}
+      <main className="mx-auto max-w-7xl px-3.5 py-4 sm:px-8 sm:py-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* Desktop Left Sidebar */}
+          <aside className="w-full shrink-0 lg:w-64">
+            <div className="sticky top-20 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+              <div className="mb-3 px-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#647083] dark:text-[#94a3b8]">
+                  Admin Studio
+                </span>
+              </div>
+
+              {/* Navigation Menu */}
+              <nav className="space-y-1.5">
+                {/* 1. Recorded Classes */}
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('classes')}
+                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-xs font-bold transition cursor-pointer ${
+                    adminTab === 'classes'
+                      ? 'bg-[#087fce] text-white shadow-md shadow-[#087fce]/20'
+                      : 'text-[#475569] hover:bg-[#f1f5f9] hover:text-[#172333] dark:text-[#cbd5e1] dark:hover:bg-[#192638] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Video className="size-4 shrink-0" />
+                    <span>Recorded Classes</span>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      adminTab === 'classes'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/20 dark:text-[#61c5ff]'
+                    }`}
+                  >
+                    {classes.length}
+                  </span>
+                </button>
+
+                {/* 2. Live Sessions */}
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('live')}
+                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-xs font-bold transition cursor-pointer ${
+                    adminTab === 'live'
+                      ? 'bg-[#087fce] text-white shadow-md shadow-[#087fce]/20'
+                      : 'text-[#475569] hover:bg-[#f1f5f9] hover:text-[#172333] dark:text-[#cbd5e1] dark:hover:bg-[#192638] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Radio className="size-4 shrink-0 text-red-500 animate-pulse" />
+                    <span>Live Sessions</span>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      adminTab === 'live'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400'
+                    }`}
+                  >
+                    {liveSessions.length}
+                  </span>
+                </button>
+
+                {/* 3. Project Submissions */}
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('projects')}
+                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-xs font-bold transition cursor-pointer ${
+                    adminTab === 'projects'
+                      ? 'bg-[#087fce] text-white shadow-md shadow-[#087fce]/20'
+                      : 'text-[#475569] hover:bg-[#f1f5f9] hover:text-[#172333] dark:text-[#cbd5e1] dark:hover:bg-[#192638] dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Code2 className="size-4 shrink-0 text-emerald-500" />
+                    <span>Project Submits</span>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      adminTab === 'projects'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+                    }`}
+                  >
+                    {adminProjects.length}
+                  </span>
+                </button>
+              </nav>
+
+              {/* Admin Info Card */}
+              <div className="mt-6 border-t border-[#edf2f7] pt-4 dark:border-[#2a3b50]">
+                <div className="rounded-xl border border-[#dce5f1] bg-[#f8fafc] p-3 text-xs dark:border-[#2a3b50] dark:bg-[#192638]/70">
+                  <div className="flex items-center gap-2 text-[#087fce] dark:text-[#61c5ff] font-bold">
+                    <GraduationCap className="size-4" />
+                    <span>Admin Control</span>
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-[#647083] dark:text-[#94a3b8] leading-relaxed">
+                    Upload classes, schedule Google Meet, and live preview students&apos; HTML code submissions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Mobile Tab Navigation */}
+            <div className="mb-5 grid grid-cols-3 gap-1 rounded-2xl border border-[#dce5f1] bg-white p-1.5 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d] lg:hidden">
+              <button
+                type="button"
+                onClick={() => setAdminTab('classes')}
+                className={`min-w-0 flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-bold transition cursor-pointer ${
+                  adminTab === 'classes'
+                    ? 'bg-[#087fce] text-white shadow-xs'
+                    : 'text-[#647083] dark:text-[#94a3b8]'
+                }`}
+              >
+                <Video className="size-3.5 shrink-0" />
+                <span className="truncate">Classes</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminTab('live')}
+                className={`min-w-0 flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-bold transition cursor-pointer ${
+                  adminTab === 'live'
+                    ? 'bg-[#087fce] text-white shadow-xs'
+                    : 'text-[#647083] dark:text-[#94a3b8]'
+                }`}
+              >
+                <Radio className="size-3.5 shrink-0 text-red-500 animate-pulse" />
+                <span className="truncate">Live</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminTab('projects')}
+                className={`min-w-0 flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-bold transition cursor-pointer ${
+                  adminTab === 'projects'
+                    ? 'bg-[#087fce] text-white shadow-xs'
+                    : 'text-[#647083] dark:text-[#94a3b8]'
+                }`}
+              >
+                <Code2 className="size-3.5 shrink-0 text-emerald-500" />
+                <span className="truncate">Projects</span>
+              </button>
+            </div>
+
+            {/* TAB 1: RECORDED CLASSES */}
+            {adminTab === 'classes' && (
+              <>
+                <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#d9e7f5] bg-gradient-to-br from-white via-[#f0f7ff] to-[#e5f2ff] p-4.5 sm:p-8 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43]">
           <div className="pointer-events-none absolute -right-12 -top-24 size-56 rounded-full bg-[#70c6ff]/15 blur-3xl" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -1568,30 +1787,36 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      </>
+    )}
 
-        {/* LIVE SESSIONS SECTION (GOOGLE MEET) */}
-        <div className="mt-14 border-t border-[#dce5f1] pt-10 dark:border-[#2a3b50]">
-          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    {/* TAB 2: LIVE SESSIONS (GOOGLE MEET) */}
+    {adminTab === 'live' && (
+      <>
+        <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-red-200/80 bg-gradient-to-br from-white via-[#fff1f2] to-[#ffe4e6] p-4.5 sm:p-8 shadow-sm dark:border-red-900/40 dark:from-[#131e2d] dark:via-[#26161c] dark:to-[#311720]">
+          <div className="pointer-events-none absolute -right-12 -top-24 size-56 rounded-full bg-rose-500/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-2">
                 <span className="flex size-8 items-center justify-center rounded-lg bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
                   <Radio className="size-4 animate-pulse" />
                 </span>
-                <h2 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb]">
+                <h2 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-2xl">
                   Live Sessions Studio (Google Meet)
                 </h2>
               </div>
-              <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
+              <p className="mt-1 text-xs sm:text-sm text-[#647083] dark:text-[#94a3b8]">
                 Add Google Meet link, session name, and photo. Students get an instant notification alert on their dashboard.
               </p>
             </div>
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
               <span className="size-2 rounded-full bg-red-500 animate-ping" />
               {liveSessions.length} {liveSessions.length === 1 ? 'Live Session' : 'Live Sessions'}
             </span>
           </div>
+        </div>
 
-          <div className="grid gap-8 lg:grid-cols-12">
+        <div className="grid gap-8 lg:grid-cols-12">
             {/* Live Session Form (5 cols on lg) */}
             <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-6 lg:col-span-5">
               <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
@@ -1883,8 +2108,203 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        </>
+      )}
+
+    {/* TAB 3: STUDENT PROJECT SUBMISSIONS (REVIEW & LIVE PREVIEW) */}
+    {adminTab === 'projects' && (
+      <>
+        {/* Projects Hero Card */}
+        <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-white via-[#f0fdf4] to-[#dcfce7] p-4.5 sm:p-8 shadow-sm dark:border-emerald-900/40 dark:from-[#0f1d1a] dark:via-[#132722] dark:to-[#16332c]">
+          <div className="pointer-events-none absolute -right-12 -top-24 size-56 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                  <Code2 className="size-4" />
+                </span>
+                <h2 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-2xl">
+                  Student Project Submissions (HTML Practical)
+                </h2>
+              </div>
+              <p className="mt-1 text-xs sm:text-sm text-[#5e6f84] dark:text-[#94a3b8]">
+                Review student HTML code submissions, open direct live interactive previews in the browser, and inspect code. Submissions auto-expire after 48 hours.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100/80 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <Clock className="size-3.5" />
+                <span>48h Expiry Sync</span>
+              </span>
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-xs dark:border-emerald-900/50 dark:bg-[#10231f] dark:text-emerald-400">
+                {adminProjects.length} {adminProjects.length === 1 ? 'Submission' : 'Submissions'}
+              </span>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Search & Submissions Table/List */}
+        <div className="rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
+                Submitted Projects List
+              </h3>
+              <p className="text-xs text-[#647083] dark:text-[#94a3b8]">
+                Click &quot;Live Preview&quot; to test and render any student&apos;s project directly
+              </p>
+            </div>
+
+            {adminProjects.length > 0 && (
+              <label className="relative block w-full sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                <input
+                  type="search"
+                  value={adminProjectSearch}
+                  onChange={(e) => setAdminProjectSearch(e.target.value)}
+                  placeholder="Search by student name..."
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] py-2 pl-10 pr-3.5 text-xs text-[#172333] shadow-xs outline-none transition focus:border-emerald-500 focus:bg-white dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </label>
+            )}
+          </div>
+
+          {isLoadingAdminProjects ? (
+            <div className="rounded-xl border border-[#dce5f1] bg-[#f8fafc] p-8 text-center text-xs text-[#647083] dark:border-[#2a3b50] dark:bg-[#192638] dark:text-[#94a3b8]">
+              Loading project submissions...
+            </div>
+          ) : adminProjects.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#dce5f1] bg-[#f8fafc] p-10 text-center dark:border-[#2a3b50] dark:bg-[#192638]">
+              <Code2 className="mx-auto size-10 text-[#94a3b8]" />
+              <h4 className="mt-3 text-sm font-bold text-[#172333] dark:text-[#edf3fb]">
+                No student submissions yet
+              </h4>
+              <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
+                When students submit practical HTML assignments or code lines from their dashboard, they will appear here with instant live preview.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {adminProjects
+                .filter((p) => {
+                  const q = adminProjectSearch.trim().toLowerCase()
+                  return !q || p.studentName.toLowerCase().includes(q) || p.title.toLowerCase().includes(q)
+                })
+                .map((proj) => {
+                  const timeInfo = formatTimeRemaining(proj.expiresAt)
+                  const submittedDate = new Date(proj.createdAt).toLocaleString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })
+
+                  return (
+                    <div
+                      key={proj.id}
+                      className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3.5 transition hover:border-emerald-300 dark:border-[#2a3b50] dark:bg-[#162232] sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-bold text-[#172333] dark:text-[#edf3fb]">
+                            {proj.studentName}
+                          </span>
+                          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                            {proj.fileName}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                            <Clock className="size-3" />
+                            {timeInfo.formatted}
+                          </span>
+                          <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[10px] text-[#647083] dark:bg-[#1e2d42] dark:text-[#94a3b8]">
+                            {proj.submissionType === 'code' ? 'Code Lines' : 'File Upload'}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 text-xs font-medium text-[#475569] dark:text-[#cbd5e1] truncate">
+                          {proj.title}
+                        </p>
+
+                        <p className="mt-1.5 text-[11px] text-[#647083] dark:text-[#94a3b8]">
+                          Submitted on {submittedDate} • Auto-expires in 48 hours
+                        </p>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Live Preview Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewAdminProject(proj)
+                            setPreviewAdminTab('preview')
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 transition cursor-pointer"
+                          title="Instant Live HTML Render"
+                        >
+                          <Eye className="size-3.5" />
+                          <span>Live Preview</span>
+                        </button>
+
+                        {/* Source Code Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewAdminProject(proj)
+                            setPreviewAdminTab('code')
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#d8e1ec] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#314255] hover:bg-[#f8fafc] transition cursor-pointer dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1]"
+                          title="View Source Code"
+                        >
+                          <Code2 className="size-3.5" />
+                          <span>Code</span>
+                        </button>
+
+                        {/* Download Button */}
+                        {proj.fileContent && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const blob = new Blob([proj.fileContent || ''], {
+                                type: 'text/html;charset=utf-8',
+                              })
+                              const url = URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = proj.fileName || 'project.html'
+                              a.click()
+                              URL.revokeObjectURL(url)
+                            }}
+                            className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] hover:bg-[#f8fafc] transition cursor-pointer dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1]"
+                            title="Download .html file"
+                          >
+                            <Download className="size-3.5" />
+                          </button>
+                        )}
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAdminProject(proj.id)}
+                          disabled={deletingProjectId === proj.id}
+                          className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100 transition cursor-pointer dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400"
+                          title="Delete submission"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
+      </>
+    )}
+  </div>
+</div>
+</main>
 
       {/* EDIT RECORDED CLASS MODAL */}
       {editingClass && (
@@ -2493,6 +2913,143 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN LIVE HTML PREVIEW MODAL */}
+      {previewAdminProject && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-4 backdrop-blur-xs"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewAdminProject(null)
+          }}
+        >
+          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-[#dce5f1] bg-white shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] px-4 py-3 sm:px-6 dark:border-[#2a3b50]">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                    <Eye className="size-4" />
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-[#172333] dark:text-[#edf3fb] truncate">
+                    {previewAdminProject.studentName}&apos;s HTML Project
+                  </h3>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                    {previewAdminProject.fileName}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#647083] dark:text-[#94a3b8] mt-0.5">
+                  {previewAdminProject.title} • {formatTimeRemaining(previewAdminProject.expiresAt).formatted}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Tabs switch */}
+                <div className="inline-flex rounded-lg border border-[#d8e1ec] bg-[#f1f5f9] p-0.5 text-xs font-semibold dark:border-[#34445a] dark:bg-[#192638]">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewAdminTab('preview')}
+                    className={`rounded-md px-2.5 py-1 transition cursor-pointer ${
+                      previewAdminTab === 'preview'
+                        ? 'bg-white text-emerald-700 shadow-xs dark:bg-[#0d1421] dark:text-emerald-400'
+                        : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8]'
+                    }`}
+                  >
+                    Live Webpage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewAdminTab('code')}
+                    className={`rounded-md px-2.5 py-1 transition cursor-pointer ${
+                      previewAdminTab === 'code'
+                        ? 'bg-white text-emerald-700 shadow-xs dark:bg-[#0d1421] dark:text-emerald-400'
+                        : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8]'
+                    }`}
+                  >
+                    Source Code
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewAdminProject(null)}
+                  className="rounded-full p-1.5 text-[#647083] hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#192638] cursor-pointer"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#f8fafc] dark:bg-[#0d1421]">
+              {previewAdminTab === 'preview' ? (
+                <div className="h-[520px] w-full overflow-hidden rounded-xl border border-[#dce5f1] bg-white shadow-inner dark:border-[#2a3b50]">
+                  <iframe
+                    title="Student Project Live Render"
+                    srcDoc={
+                      previewAdminProject.fileContent ||
+                      `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;"><h3>No preview content</h3></body></html>`
+                    }
+                    sandbox="allow-scripts"
+                    className="size-full border-0 bg-white"
+                  />
+                </div>
+              ) : (
+                <div className="relative">
+                  <pre className="max-h-[520px] overflow-auto rounded-xl border border-[#dce5f1] bg-[#1e293b] p-4 text-xs font-mono text-emerald-400 shadow-inner">
+                    {previewAdminProject.fileContent || '<!-- No code content -->'}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between border-t border-[#e2e8f0] px-4 py-3 sm:px-6 dark:border-[#2a3b50] bg-white dark:bg-[#131e2d]">
+              <span className="text-[11px] text-[#647083] dark:text-[#94a3b8]">
+                Auto-cleans in 48 hours from Supabase
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (previewAdminProject.fileContent) {
+                      navigator.clipboard.writeText(previewAdminProject.fileContent)
+                      setAdminCopiedCode(true)
+                      setTimeout(() => setAdminCopiedCode(false), 2000)
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8e1ec] bg-white px-3 py-1.5 text-xs font-semibold text-[#314255] hover:bg-[#f8fafc] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] cursor-pointer"
+                >
+                  {adminCopiedCode ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+                  <span>{adminCopiedCode ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+
+                {previewAdminProject.fileContent && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const blob = new Blob([previewAdminProject.fileContent || ''], {
+                        type: 'text/html;charset=utf-8',
+                      })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = previewAdminProject.fileName || 'project.html'
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 cursor-pointer shadow-xs"
+                  >
+                    <Download className="size-3.5" />
+                    <span>Download .html</span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

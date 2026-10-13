@@ -89,8 +89,6 @@ export function StudentDashboard({
 
   // Preview & Edit states for student projects
   const [previewProject, setPreviewProject] = useState<ProjectSubmission | null>(null)
-  const [previewTab, setPreviewTab] = useState<'preview' | 'code'>('preview')
-  const [copiedCode, setCopiedCode] = useState(false)
   const [editingProject, setEditingProject] = useState<ProjectSubmission | null>(null)
   const [editStudentName, setEditStudentName] = useState('')
   const [editProjectTitle, setEditProjectTitle] = useState('')
@@ -1306,10 +1304,7 @@ export function StudentDashboard({
                                   {/* Preview Button */}
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setPreviewProject(proj)
-                                      setPreviewTab('preview')
-                                    }}
+                                    onClick={() => setPreviewProject(proj)}
                                     className="inline-flex items-center gap-1 rounded-lg border border-[#087fce]/30 bg-[#087fce]/10 px-2.5 py-1.5 text-xs font-semibold text-[#087fce] hover:bg-[#087fce]/20 transition cursor-pointer dark:text-[#61c5ff]"
                                     title="Live HTML Preview"
                                   >
@@ -1379,87 +1374,37 @@ export function StudentDashboard({
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* Tabs switch */}
-                      <div className="inline-flex rounded-lg border border-[#d8e1ec] bg-[#f1f5f9] p-0.5 text-xs font-semibold dark:border-[#34445a] dark:bg-[#192638]">
-                        <button
-                          type="button"
-                          onClick={() => setPreviewTab('preview')}
-                          className={`rounded-md px-2.5 py-1 transition cursor-pointer ${
-                            previewTab === 'preview'
-                              ? 'bg-white text-emerald-700 shadow-xs dark:bg-[#0d1421] dark:text-emerald-400'
-                              : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8]'
-                          }`}
-                        >
-                          Live Webpage
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewTab('code')}
-                          className={`rounded-md px-2.5 py-1 transition cursor-pointer ${
-                            previewTab === 'code'
-                              ? 'bg-white text-emerald-700 shadow-xs dark:bg-[#0d1421] dark:text-emerald-400'
-                              : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8]'
-                          }`}
-                        >
-                          Source Code
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setPreviewProject(null)}
-                        className="rounded-full p-1.5 text-[#647083] hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#192638] cursor-pointer"
-                      >
-                        <X className="size-5" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewProject(null)}
+                      className="rounded-full p-1.5 text-[#647083] hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#192638] cursor-pointer"
+                      title="Close"
+                    >
+                      <X className="size-5" />
+                    </button>
                   </div>
 
-                  {/* Modal Body */}
-                  <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#f8fafc] dark:bg-[#0d1421]">
-                    {previewTab === 'preview' ? (
-                      <div className="h-[500px] w-full overflow-hidden rounded-xl border border-[#dce5f1] bg-white shadow-inner dark:border-[#2a3b50]">
-                        <iframe
-                          title="HTML Project Preview"
-                          srcDoc={
-                            previewProject.fileContent ||
-                            `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;"><h3>No preview content</h3></body></html>`
-                          }
-                          sandbox="allow-scripts"
-                          className="size-full border-0 bg-white"
-                        />
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <pre className="max-h-[500px] overflow-auto rounded-xl border border-[#dce5f1] bg-[#1e293b] p-4 text-xs font-mono text-emerald-400 shadow-inner">
-                          {previewProject.fileContent || '<!-- No code content -->'}
-                        </pre>
-                      </div>
-                    )}
+                  {/* Modal Body: Clean Direct Live Webpage Preview */}
+                  <div className="flex-1 overflow-auto p-3 sm:p-6 bg-[#f8fafc] dark:bg-[#0d1421]">
+                    <div className="h-[480px] sm:h-[520px] w-full overflow-hidden rounded-xl border border-[#dce5f1] bg-white shadow-inner dark:border-[#2a3b50]">
+                      <iframe
+                        title="HTML Project Preview"
+                        srcDoc={
+                          previewProject.fileContent ||
+                          `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;"><h3>No preview content</h3></body></html>`
+                        }
+                        sandbox="allow-scripts"
+                        className="size-full border-0 bg-white"
+                      />
+                    </div>
                   </div>
 
                   {/* Modal Footer */}
                   <div className="flex items-center justify-between border-t border-[#e2e8f0] px-4 py-3 sm:px-6 dark:border-[#2a3b50] bg-white dark:bg-[#131e2d]">
                     <span className="text-[11px] text-[#647083] dark:text-[#94a3b8]">
-                      Expires automatically after 48 hours
+                      Auto-expires after 48 hours
                     </span>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (previewProject.fileContent) {
-                            navigator.clipboard.writeText(previewProject.fileContent)
-                            setCopiedCode(true)
-                            setTimeout(() => setCopiedCode(false), 2000)
-                          }
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8e1ec] bg-white px-3 py-1.5 text-xs font-semibold text-[#314255] hover:bg-[#f8fafc] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] cursor-pointer"
-                      >
-                        {copiedCode ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
-                        <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
-                      </button>
-
                       {previewProject.fileContent && (
                         <button
                           type="button"
@@ -1480,6 +1425,13 @@ export function StudentDashboard({
                           <span>Download .html</span>
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewProject(null)}
+                        className="rounded-xl border border-[#d8e1ec] bg-white px-3 py-1.5 text-xs font-semibold text-[#475569] hover:bg-[#f8fafc] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] cursor-pointer"
+                      >
+                        Close
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -169,22 +169,22 @@ export function StudentDashboard({
     >
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-[#e1e7ef] bg-white/95 backdrop-blur-md dark:border-[#2a3b50] dark:bg-[#131e2d]/95">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
-          <Link href="/" className="flex items-center gap-3 group">
-            <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dce5f1] bg-[#07111d] dark:border-[#2a3b50] transition group-hover:scale-105">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-3.5 py-3 sm:px-8">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group min-w-0">
+            <span className="flex size-9 sm:size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dce5f1] bg-[#07111d] dark:border-[#2a3b50] transition group-hover:scale-105">
               <img src="/logo.jpg" alt="IGNOU Coders logo" className="size-full object-contain" />
             </span>
-            <div>
-              <span className="block text-sm font-bold tracking-wider text-[#172333] dark:text-[#edf3fb]">
+            <div className="min-w-0">
+              <span className="block text-xs sm:text-sm font-bold tracking-wider text-[#172333] dark:text-[#edf3fb] truncate">
                 IGNOU CODERS
               </span>
-              <span className="text-xs text-[#647083] dark:text-[#94a3b8]">
-                Student Dashboard · pyeater.in
+              <span className="block text-[10px] sm:text-xs text-[#647083] dark:text-[#94a3b8] truncate">
+                Student Dashboard
               </span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {profile?.email && (
               <span className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-[#d8e1ec] bg-white px-3 py-1.5 text-xs font-semibold text-[#475569] shadow-xs dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1]">
                 <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -214,7 +214,7 @@ export function StudentDashboard({
 
               {/* Notification Popover */}
               {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xl dark:border-[#2a3b50] dark:bg-[#131e2d] z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 sm:mt-2 sm:w-96 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between border-b border-[#eef2f6] pb-3 dark:border-[#2a3b50]">
                     <div className="flex items-center gap-2">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
@@ -326,7 +326,7 @@ export function StudentDashboard({
       </header>
 
       {/* Main Content Layout with Sidebar */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
+      <main className="mx-auto max-w-7xl px-3.5 py-4 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* Desktop Left Sidebar */}
           <aside className="w-full shrink-0 lg:w-64">
@@ -419,14 +419,14 @@ export function StudentDashboard({
               <button
                 type="button"
                 onClick={() => setActiveTab('recorded')}
-                className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition cursor-pointer ${
+                className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl py-2 px-2 text-xs font-bold transition cursor-pointer ${
                   activeTab === 'recorded'
                     ? 'bg-[#087fce] text-white shadow-xs'
                     : 'text-[#647083] dark:text-[#94a3b8]'
                 }`}
               >
-                <Video className="size-3.5" />
-                <span>Recorded Sessions ({classes.length})</span>
+                <Video className="size-3.5 shrink-0" />
+                <span className="truncate">Recorded ({classes.length})</span>
               </button>
               <button
                 type="button"
@@ -434,15 +434,15 @@ export function StudentDashboard({
                   setActiveTab('live')
                   setHasUnread(false)
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition cursor-pointer ${
+                className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl py-2 px-2 text-xs font-bold transition cursor-pointer ${
                   activeTab === 'live'
                     ? 'bg-[#087fce] text-white shadow-xs'
                     : 'text-[#647083] dark:text-[#94a3b8]'
                 }`}
               >
-                <Radio className="size-3.5 text-red-500 animate-pulse" />
-                <span>Live Sessions</span>
-                <span className="size-1.5 rounded-full bg-red-500 animate-ping" />
+                <Radio className="size-3.5 shrink-0 text-red-500 animate-pulse" />
+                <span className="truncate">Live Sessions</span>
+                <span className="size-1.5 shrink-0 rounded-full bg-red-500 animate-ping" />
               </button>
             </div>
 
@@ -450,20 +450,20 @@ export function StudentDashboard({
             {activeTab === 'recorded' && (
               <>
                 {/* Hero Card */}
-                <div className="relative mb-6 overflow-hidden rounded-3xl border border-[#dce5f1] bg-gradient-to-br from-white via-[#eff7ff] to-[#e4f2ff] p-6 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43] sm:p-7">
+                <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#dce5f1] bg-gradient-to-br from-white via-[#eff7ff] to-[#e4f2ff] p-4.5 sm:p-7 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43]">
                   <div className="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full bg-[#70c6ff]/15 blur-3xl" />
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="relative">
-                      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#087fce]/10 bg-white/80 px-3 py-1 text-xs font-semibold text-[#087fce] shadow-xs dark:border-[#61c5ff]/20 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
+                      <div className="mb-2.5 inline-flex items-center gap-2 rounded-full border border-[#087fce]/10 bg-white/80 px-3 py-1 text-xs font-semibold text-[#087fce] shadow-xs dark:border-[#61c5ff]/20 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
                         <Video className="size-3.5" />
                         <span>Recorded Video Lectures & Notes</span>
                       </div>
-                      <h1 className="text-2xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
+                      <h1 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
                         {profile?.name
                           ? `Welcome back, ${profile.name}! 👋`
                           : 'Recorded Sessions & Notes'}
                       </h1>
-                      <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
+                      <p className="mt-1.5 max-w-xl text-xs sm:text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
                         Select any recorded topic to watch the class video on YouTube and download PDF notes.
                       </p>
                     </div>
@@ -472,7 +472,7 @@ export function StudentDashboard({
                       href={WHATSAPP_LINK}
                       target="_blank"
                       rel="noreferrer"
-                      className="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#087fce] px-5 py-3 text-xs font-semibold text-white shadow-md shadow-[#087fce]/20 transition hover:-translate-y-0.5 hover:bg-[#0665aa] hover:shadow-lg sm:text-sm cursor-pointer"
+                      className="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#087fce] px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-[#087fce]/20 transition hover:bg-[#0665aa] sm:px-5 sm:py-3 sm:text-sm cursor-pointer w-full sm:w-auto"
                     >
                       <MessageCircle className="size-4" />
                       <span>Join WhatsApp Group</span>
@@ -608,18 +608,18 @@ export function StudentDashboard({
             {activeTab === 'live' && (
               <>
                 {/* Live Hero Card */}
-                <div className="relative mb-6 overflow-hidden rounded-3xl border border-[#dce5f1] bg-gradient-to-br from-white via-[#fff1f2] to-[#ffe4e6] p-6 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#26161c] dark:to-[#311720] sm:p-7">
+                <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#dce5f1] bg-gradient-to-br from-white via-[#fff1f2] to-[#ffe4e6] p-4.5 sm:p-7 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#26161c] dark:to-[#311720]">
                   <div className="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full bg-rose-500/10 blur-3xl" />
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="relative">
-                      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-white/90 px-3 py-1 text-xs font-bold text-red-600 shadow-xs dark:bg-[#1f131a] dark:text-red-400">
+                      <div className="mb-2.5 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-white/90 px-3 py-1 text-xs font-bold text-red-600 shadow-xs dark:bg-[#1f131a] dark:text-red-400">
                         <span className="size-2 rounded-full bg-red-500 animate-ping" />
                         <span>Google Meet Live Sessions</span>
                       </div>
-                      <h1 className="text-2xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
+                      <h1 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
                         Interactive Live Classes
                       </h1>
-                      <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
+                      <p className="mt-1.5 max-w-xl text-xs sm:text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
                         Join real-time doubt clearing sessions, project reviews, and logic building classes directly via Google Meet.
                       </p>
                     </div>
@@ -628,7 +628,7 @@ export function StudentDashboard({
                       href={WHATSAPP_LINK}
                       target="_blank"
                       rel="noreferrer"
-                      className="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-xs font-semibold text-white shadow-md shadow-[#25D366]/20 transition hover:bg-[#1ea952] sm:text-sm cursor-pointer"
+                      className="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-[#25D366]/20 transition hover:bg-[#1ea952] sm:px-5 sm:py-3 sm:text-sm cursor-pointer w-full sm:w-auto"
                     >
                       <MessageCircle className="size-4" />
                       <span>WhatsApp Doubt Group</span>

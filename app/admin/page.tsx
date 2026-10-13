@@ -1024,59 +1024,61 @@ export default function AdminPage() {
     >
       {/* Admin Navbar */}
       <header className="border-b border-[#e1e7ef] bg-white/90 backdrop-blur-md dark:border-[#2a3b50] dark:bg-[#131e2d]/90">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-[#087fce] text-white">
-              <GraduationCap className="size-5" />
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-3.5 py-3 sm:px-8 sm:py-4">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <span className="flex size-9 sm:size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#087fce] text-white">
+              <GraduationCap className="size-4.5 sm:size-5" />
             </span>
-            <div>
-              <h1 className="text-sm font-bold tracking-wider text-[#172333] dark:text-[#edf3fb]">
+            <div className="min-w-0">
+              <h1 className="text-xs sm:text-sm font-bold tracking-wider text-[#172333] dark:text-[#edf3fb] truncate">
                 IGNOU CODERS ADMIN
               </h1>
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="block text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium truncate">
                 ● Live on pyeater.in
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               href="/dashboard"
               target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e1ec] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e1ec] bg-white px-2.5 py-1.5 sm:px-3.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1]"
             >
-              <ExternalLink className="size-3.5" />
-              <span>View Student Dashboard</span>
+              <ExternalLink className="size-3 sm:size-3.5" />
+              <span className="hidden sm:inline">View Student Dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
             </Link>
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-full border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
+              className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1.5 sm:px-3.5 text-xs font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
             >
-              Logout Admin
+              <span className="hidden sm:inline">Logout Admin</span>
+              <span className="sm:hidden">Logout</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Admin Content */}
-      <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-        <div className="relative mb-7 overflow-hidden rounded-3xl border border-[#d9e7f5] bg-gradient-to-br from-white via-[#f0f7ff] to-[#e5f2ff] p-6 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43] sm:p-8">
+      <main className="mx-auto max-w-6xl px-3.5 py-5 sm:px-8 sm:py-10">
+        <div className="relative mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-[#d9e7f5] bg-gradient-to-br from-white via-[#f0f7ff] to-[#e5f2ff] p-4.5 sm:p-8 shadow-sm dark:border-[#2a3b50] dark:from-[#131e2d] dark:via-[#16273c] dark:to-[#172c43]">
           <div className="pointer-events-none absolute -right-12 -top-24 size-56 rounded-full bg-[#70c6ff]/15 blur-3xl" />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#087fce]/10 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#087fce] shadow-xs dark:border-[#61c5ff]/20 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
+              <span className="mb-2.5 inline-flex items-center gap-2 rounded-full border border-[#087fce]/10 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#087fce] shadow-xs dark:border-[#61c5ff]/20 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
                 <GraduationCap className="size-3.5" />
                 Learning hub
               </span>
-              <h1 className="text-2xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
+              <h1 className="text-xl font-bold tracking-tight text-[#172333] dark:text-[#edf3fb] sm:text-3xl">
                 Content studio
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
+              <p className="mt-1.5 max-w-xl text-xs sm:text-sm leading-relaxed text-[#5e6f84] dark:text-[#94a3b8]">
                 Publish a class once. Students can access the video and notes from their dashboard.
               </p>
             </div>
-            <span className="relative inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-200/80 bg-white/80 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-900/50 dark:bg-[#10231f]/70 dark:text-emerald-400">
+            <span className="relative inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-200/80 bg-white/80 px-3 py-2 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-900/50 dark:bg-[#10231f]/70 dark:text-emerald-400">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" />
                 <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
@@ -1086,32 +1088,32 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="mb-7 grid gap-3 sm:grid-cols-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
-              <Video className="size-5" />
+        <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-[#dce5f1] bg-white p-2.5 sm:p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+            <span className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
+              <Video className="size-4 sm:size-5" />
             </span>
-            <div>
-              <p className="text-xl font-bold text-[#172333] dark:text-[#edf3fb]">{classes.length}</p>
-              <p className="text-[11px] font-medium text-[#647083] dark:text-[#94a3b8]">Published classes</p>
+            <div className="min-w-0">
+              <p className="text-base sm:text-xl font-bold text-[#172333] dark:text-[#edf3fb] leading-tight">{classes.length}</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#647083] dark:text-[#94a3b8] leading-tight truncate">Classes</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/15 dark:text-purple-400">
-              <FileText className="size-5" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-[#dce5f1] bg-white p-2.5 sm:p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+            <span className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-400/15 dark:text-purple-400">
+              <FileText className="size-4 sm:size-5" />
             </span>
-            <div>
-              <p className="text-xl font-bold text-[#172333] dark:text-[#edf3fb]">{classesWithPdf}</p>
-              <p className="text-[11px] font-medium text-[#647083] dark:text-[#94a3b8]">With PDF notes</p>
+            <div className="min-w-0">
+              <p className="text-base sm:text-xl font-bold text-[#172333] dark:text-[#edf3fb] leading-tight">{classesWithPdf}</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#647083] dark:text-[#94a3b8] leading-tight truncate">PDF notes</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#dce5f1] bg-white p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400">
-              <ImageIcon className="size-5" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-[#dce5f1] bg-white p-2.5 sm:p-4 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+            <span className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400">
+              <ImageIcon className="size-4 sm:size-5" />
             </span>
-            <div>
-              <p className="text-xl font-bold text-[#172333] dark:text-[#edf3fb]">{classesWithImages}</p>
-              <p className="text-[11px] font-medium text-[#647083] dark:text-[#94a3b8]">With cover images</p>
+            <div className="min-w-0">
+              <p className="text-base sm:text-xl font-bold text-[#172333] dark:text-[#edf3fb] leading-tight">{classesWithImages}</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#647083] dark:text-[#94a3b8] leading-tight truncate">Covers</p>
             </div>
           </div>
         </div>
@@ -1478,83 +1480,87 @@ export default function AdminPage() {
                 filteredClasses.map((cls) => (
                   <div
                     key={cls.id}
-                    className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3.5 transition hover:border-[#b7d8f4] hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-[#61c5ff]/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
+                    className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3 transition hover:border-[#b7d8f4] hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-[#61c5ff]/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                   >
                     <div className="flex items-start gap-3 min-w-0">
                       {cls.imageUrl ? (
                         <img
                           src={cls.imageUrl}
                           alt={cls.title}
-                          className="size-12 shrink-0 rounded-xl object-cover border border-[#d8e1ec] dark:border-[#34445a]"
+                          className="size-11 sm:size-12 shrink-0 rounded-xl object-cover border border-[#d8e1ec] dark:border-[#34445a]"
                         />
                       ) : (
-                        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#087fce]/15 to-[#61c5ff]/10 text-[#087fce] dark:from-[#61c5ff]/20 dark:to-[#087fce]/10 dark:text-[#61c5ff]">
+                        <span className="flex size-11 sm:size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#087fce]/15 to-[#61c5ff]/10 text-[#087fce] dark:from-[#61c5ff]/20 dark:to-[#087fce]/10 dark:text-[#61c5ff]">
                           <Video className="size-5" />
                         </span>
                       )}
 
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] truncate">
+                        <h3 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] break-words line-clamp-2 sm:line-clamp-1">
                           {cls.title}
                         </h3>
                         {cls.notes && (
-                          <p className="mt-0.5 line-clamp-1 text-xs text-[#647083] dark:text-[#94a3b8]">
+                          <p className="mt-0.5 line-clamp-2 sm:line-clamp-1 text-xs text-[#647083] dark:text-[#94a3b8]">
                             {cls.notes}
                           </p>
                         )}
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-[#647083] dark:text-[#94a3b8]">
                           <span>{cls.dateAdded}</span>
                           {cls.pdfUrl && (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                              • PDF attached {cls.pdfFileName ? `(${cls.pdfFileName})` : ''}
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium truncate max-w-[200px]">
+                              • PDF {cls.pdfFileName ? `(${cls.pdfFileName})` : 'attached'}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      {cls.pdfUrl && (
-                        <a
-                          href={cls.pdfUrl}
-                          download={cls.pdfFileName || 'notes.pdf'}
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-[#f0f4f9] sm:border-0 dark:border-[#2a3b50]/60 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {cls.pdfUrl && (
+                          <a
+                            href={cls.pdfUrl}
+                            download={cls.pdfFileName || 'notes.pdf'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-[#d8e1ec] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1]"
+                          >
+                            <FileText className="size-3.5" />
+                            <span>PDF</span>
+                          </a>
+                        )}
+                        <Link
+                          href={`/dashboard/classes/${encodeURIComponent(cls.id)}`}
                           target="_blank"
-                          rel="noreferrer"
                           className="inline-flex items-center gap-1 rounded-lg border border-[#d8e1ec] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1]"
                         >
-                          <FileText className="size-3.5" />
-                          <span>PDF</span>
-                        </a>
-                      )}
-                      <Link
-                        href={`/dashboard/classes/${encodeURIComponent(cls.id)}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 rounded-lg border border-[#d8e1ec] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1]"
-                      >
-                        <Video className="size-3.5" />
-                        <span>View</span>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleStartEditClass(cls)}
-                        title="Edit class & notes"
-                        className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1] dark:hover:text-[#61c5ff] cursor-pointer"
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(cls.id)}
-                        disabled={deletingClassId === cls.id}
-                        title="Delete class"
-                        className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-60 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
-                      >
-                        {deletingClassId === cls.id ? (
-                          <Upload className="size-4 animate-pulse" />
-                        ) : (
-                          <Trash2 className="size-4" />
-                        )}
-                      </button>
+                          <Video className="size-3.5" />
+                          <span>View</span>
+                        </Link>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditClass(cls)}
+                          title="Edit class & notes"
+                          className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1] dark:hover:text-[#61c5ff] cursor-pointer"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(cls.id)}
+                          disabled={deletingClassId === cls.id}
+                          title="Delete class"
+                          className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-60 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
+                        >
+                          {deletingClassId === cls.id ? (
+                            <Upload className="size-4 animate-pulse" />
+                          ) : (
+                            <Trash2 className="size-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1806,23 +1812,23 @@ export default function AdminPage() {
                   liveSessions.map((session) => (
                     <div
                       key={session.id}
-                      className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3.5 transition hover:border-red-300 hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-red-500/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
+                      className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3 transition hover:border-red-300 hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-red-500/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                     >
                       <div className="flex items-start gap-3 min-w-0">
                         {session.imageUrl ? (
                           <img
                             src={session.imageUrl}
                             alt={session.title}
-                            className="size-12 shrink-0 rounded-xl object-cover border border-[#d8e1ec] dark:border-[#34445a]"
+                            className="size-11 sm:size-12 shrink-0 rounded-xl object-cover border border-[#d8e1ec] dark:border-[#34445a]"
                           />
                         ) : (
-                          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                          <span className="flex size-11 sm:size-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
                             <Radio className="size-5" />
                           </span>
                         )}
 
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] truncate">
+                          <h4 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] break-words line-clamp-2 sm:line-clamp-1">
                             {session.title}
                           </h4>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[#647083] dark:text-[#94a3b8]">
@@ -1831,13 +1837,13 @@ export default function AdminPage() {
                               Google Meet
                             </span>
                             {session.scheduledTime && (
-                              <span>• {session.scheduledTime}</span>
+                              <span className="truncate max-w-[180px]">• {session.scheduledTime}</span>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-[#f0f4f9] sm:border-0 dark:border-[#2a3b50]/60 shrink-0">
                         <a
                           href={session.meetUrl}
                           target="_blank"
@@ -1847,27 +1853,29 @@ export default function AdminPage() {
                           <span>Test Meet</span>
                           <ExternalLink className="size-3" />
                         </a>
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditLiveSession(session)}
-                          title="Edit live session"
-                          className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] transition hover:border-red-300 hover:text-red-600 dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1] dark:hover:text-red-400 cursor-pointer"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteLiveSession(session.id)}
-                          disabled={deletingLiveSessionId === session.id}
-                          title="Delete live session"
-                          className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-60 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
-                        >
-                          {deletingLiveSessionId === session.id ? (
-                            <Upload className="size-4 animate-pulse" />
-                          ) : (
-                            <Trash2 className="size-4" />
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditLiveSession(session)}
+                            title="Edit live session"
+                            className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] transition hover:border-red-300 hover:text-red-600 dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1] dark:hover:text-red-400 cursor-pointer"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLiveSession(session.id)}
+                            disabled={deletingLiveSessionId === session.id}
+                            title="Delete live session"
+                            className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-60 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 cursor-pointer"
+                          >
+                            {deletingLiveSessionId === session.id ? (
+                              <Upload className="size-4 animate-pulse" />
+                            ) : (
+                              <Trash2 className="size-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1883,12 +1891,12 @@ export default function AdminPage() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-4 backdrop-blur-xs"
           onClick={(e) => {
             if (e.target === e.currentTarget && !isSavingEditClass) setEditingClass(null)
           }}
         >
-          <div className="relative my-8 w-full max-w-xl rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] max-h-[90vh] overflow-y-auto">
+          <div className="relative my-3 sm:my-8 w-full max-w-xl rounded-2xl border border-[#dce5f1] bg-white p-4 sm:p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] max-h-[92vh] overflow-y-auto">
             <div className="flex items-start justify-between border-b border-[#e2e8f0] pb-4 dark:border-[#2a3b50]">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-9 items-center justify-center rounded-lg bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
@@ -1947,11 +1955,11 @@ export default function AdminPage() {
 
               {/* Cover Image */}
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5">
                   <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
                     Cover Image / Thumbnail
                   </label>
-                  <div className="flex items-center gap-1 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-1 text-[11px]">
                     {(editingClass.imageUrl || editingClass.imageStoragePath) && (
                       <button
                         type="button"
@@ -2099,11 +2107,11 @@ export default function AdminPage() {
 
               {/* PDF Notes */}
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5">
                   <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
                     PDF Notes
                   </label>
-                  <div className="flex items-center gap-1 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-1 text-[11px]">
                     {(editingClass.pdfUrl || editingClass.pdfStoragePath) && (
                       <button
                         type="button"
@@ -2225,19 +2233,19 @@ export default function AdminPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e2e8f0] dark:border-[#2a3b50]">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-[#e2e8f0] dark:border-[#2a3b50]">
                 <button
                   type="button"
                   disabled={isSavingEditClass}
                   onClick={() => setEditingClass(null)}
-                  className="rounded-xl border border-[#d8e1ec] px-4 py-2 text-xs font-semibold text-[#647083] hover:bg-[#f1f5f9] dark:border-[#34445a] dark:text-[#94a3b8] cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center rounded-xl border border-[#d8e1ec] px-4 py-2.5 text-xs font-semibold text-[#647083] hover:bg-[#f1f5f9] dark:border-[#34445a] dark:text-[#94a3b8] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingEditClass}
-                  className="flex items-center gap-2 rounded-xl bg-[#087fce] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#0665aa] disabled:opacity-60 cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-[#087fce] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#0665aa] disabled:opacity-60 cursor-pointer"
                 >
                   {isSavingEditClass ? <Upload className="size-3.5 animate-pulse" /> : <Pencil className="size-3.5" />}
                   <span>{isSavingEditClass ? 'Updating...' : 'Save Changes'}</span>
@@ -2253,12 +2261,12 @@ export default function AdminPage() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 sm:p-4 backdrop-blur-xs"
           onClick={(e) => {
             if (e.target === e.currentTarget && !isSavingEditLiveSession) setEditingLiveSession(null)
           }}
         >
-          <div className="relative my-8 w-full max-w-xl rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] max-h-[90vh] overflow-y-auto">
+          <div className="relative my-3 sm:my-8 w-full max-w-xl rounded-2xl border border-[#dce5f1] bg-white p-4 sm:p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] max-h-[92vh] overflow-y-auto">
             <div className="flex items-start justify-between border-b border-[#e2e8f0] pb-4 dark:border-[#2a3b50]">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-9 items-center justify-center rounded-lg bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
@@ -2317,11 +2325,11 @@ export default function AdminPage() {
 
               {/* Photo */}
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5">
                   <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
                     Session Photo / Thumbnail
                   </label>
-                  <div className="flex items-center gap-1 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-1 text-[11px]">
                     {(editingLiveSession.imageUrl || editingLiveSession.imageStoragePath) && (
                       <button
                         type="button"
@@ -2466,19 +2474,19 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e2e8f0] dark:border-[#2a3b50]">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-[#e2e8f0] dark:border-[#2a3b50]">
                 <button
                   type="button"
                   disabled={isSavingEditLiveSession}
                   onClick={() => setEditingLiveSession(null)}
-                  className="rounded-xl border border-[#d8e1ec] px-4 py-2 text-xs font-semibold text-[#647083] hover:bg-[#f1f5f9] dark:border-[#34445a] dark:text-[#94a3b8] cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center rounded-xl border border-[#d8e1ec] px-4 py-2.5 text-xs font-semibold text-[#647083] hover:bg-[#f1f5f9] dark:border-[#34445a] dark:text-[#94a3b8] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingEditLiveSession}
-                  className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-red-700 disabled:opacity-60 cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-red-700 disabled:opacity-60 cursor-pointer"
                 >
                   {isSavingEditLiveSession ? <Upload className="size-3.5 animate-pulse" /> : <Pencil className="size-3.5" />}
                   <span>{isSavingEditLiveSession ? 'Updating...' : 'Save Changes'}</span>

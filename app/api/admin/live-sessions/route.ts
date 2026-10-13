@@ -135,6 +135,114 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Admin access required.' }, { status: 401 })
+  }
+  if (!isSupabaseAdminConfigured()) {
+    return NextResponse.json(
+      { error: 'Storage is not configured. Set SUPABASE_SERVICE_ROLE_KEY.' },
+      { status: 503 },
+    )
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid live session update request.' }, { status: 400 })
+  }
+
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid live session update request.' }, { status: 400 })
+  }
+
+  const item = body as Record<string, unknown>
+  if (
+    typeof item.id !== 'string' ||
+    !item.id.trim() ||
+    typeof item.title !== 'string' ||
+    !item.title.trim() ||
+    typeof item.meetUrl !== 'string' ||
+    !item.meetUrl.trim()
+  ) {
+    return NextResponse.json(
+      { error: 'Please provide valid session title and Google Meet URL.' },
+      { status: 400 },
+    )
+  }
+
+  const supabase = createSupabaseAdminClient()
+
+  // Fetch existing live session to clean up replaced storage image if any
+  const { data: existing, error: findError } = await supabase
+    .from('live_sessions')
+    .select('image_storage_path')
+    .eq('id', item.id)
+    .maybeSingle()
+
+  if (findError) {
+    console.error('Failed to find live session for update:', findError.message)
+    return NextResponse.json({ error: 'Could not update live session.' }, { status: 500 })
+  }
+  if (!existing) {
+    return NextResponse.json({ error: 'Live session not found.' }, { status: 404 })
+  }
+
+  const newImageStoragePath =
+    typeof item.imageStoragePath === 'string' ? item.imageStoragePath : null
+
+  const row = {
+    title: item.title.trim(),
+    meet_url: item.meetUrl.trim(),
+    scheduled_time:
+      typeof item.scheduledTime === 'string' ? item.scheduledTime.trim() : '',
+    image_url:
+      newImageStoragePath
+        ? null
+        : typeof item.imageUrl === 'string'
+          ? item.imageUrl.trim()
+          : null,
+    image_storage_path: newImageStoragePath,
+    is_active: item.isActive !== false,
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('live_sessions')
+      .update(row)
+      .eq('id', item.id)
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Failed to update live session:', error.message)
+      return NextResponse.json(
+        { error: 'Could not update live session.' },
+        { status: 500 },
+      )
+    }
+
+    if (existing.image_storage_path && existing.image_storage_path !== newImageStoragePath) {
+      await supabase.storage
+        .from(CLASS_ASSETS_BUCKET)
+        .remove([existing.image_storage_path])
+        .catch(() => {})
+    }
+
+    const [saved] = await liveSessionsFromDatabase([
+      data as LiveSessionDatabaseRow,
+    ])
+    return NextResponse.json(saved)
+  } catch (error) {
+    console.error('Live session update error:', error)
+    return NextResponse.json(
+      { error: 'Could not update live session.' },
+      { status: 500 },
+    )
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   if (!isAdmin(request)) {
     return NextResponse.json({ error: 'Admin access required.' }, { status: 401 })

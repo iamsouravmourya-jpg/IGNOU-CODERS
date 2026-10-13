@@ -149,6 +149,134 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Admin access required.' }, { status: 401 })
+  }
+  if (!isSupabaseAdminConfigured()) return getUnavailableResponse()
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid class update request.' }, { status: 400 })
+  }
+
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid class update request.' }, { status: 400 })
+  }
+
+  const item = body as Record<string, unknown>
+  if (typeof item.id !== 'string' || !item.id.trim()) {
+    return NextResponse.json({ error: 'A valid class ID is required.' }, { status: 400 })
+  }
+
+  const embedUrl =
+    typeof item.youtubeUrl === 'string'
+      ? toYouTubeEmbedUrl(item.youtubeUrl)
+      : null
+
+  if (
+    typeof item.title !== 'string' ||
+    !item.title.trim() ||
+    typeof item.notes !== 'string' ||
+    !embedUrl
+  ) {
+    return NextResponse.json({ error: 'Please provide valid class details.' }, { status: 400 })
+  }
+
+  const pdfUrl = typeof item.pdfUrl === 'string' ? item.pdfUrl.trim() : ''
+  const imageUrl =
+    typeof item.imageUrl === 'string' && item.imageUrl.trim()
+      ? item.imageUrl.trim()
+      : null
+
+  for (const url of [pdfUrl, imageUrl]) {
+    if (!url) continue
+    try {
+      const parsed = new URL(url)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new Error('Unsupported URL protocol')
+      }
+    } catch {
+      return NextResponse.json({ error: 'Please provide valid PDF and image URLs.' }, { status: 400 })
+    }
+  }
+
+  const supabase = createSupabaseAdminClient()
+
+  // Fetch current class to handle orphaned files cleanup if replaced
+  const { data: existing, error: findError } = await supabase
+    .from('classes')
+    .select('pdf_storage_path, image_storage_path')
+    .eq('id', item.id)
+    .maybeSingle()
+
+  if (findError) {
+    console.error('Failed to find class for update:', findError.message)
+    return NextResponse.json({ error: 'Could not update this class.' }, { status: 500 })
+  }
+  if (!existing) {
+    return NextResponse.json({ error: 'Class not found.' }, { status: 404 })
+  }
+
+  const newPdfStoragePath =
+    typeof item.pdfStoragePath === 'string' ? item.pdfStoragePath : null
+  const newImageStoragePath =
+    typeof item.imageStoragePath === 'string' ? item.imageStoragePath : null
+
+  const row: Record<string, unknown> = {
+    title: item.title.trim(),
+    youtube_url: embedUrl,
+    notes: item.notes,
+    pdf_url: newPdfStoragePath ? '' : pdfUrl,
+    pdf_file_name:
+      typeof item.pdfFileName === 'string' ? item.pdfFileName : null,
+    pdf_storage_path: newPdfStoragePath,
+    image_url: newImageStoragePath ? null : imageUrl,
+    image_storage_path: newImageStoragePath,
+  }
+
+  if (typeof item.dateAdded === 'string' && item.dateAdded.trim()) {
+    const dateAdded = new Date(item.dateAdded)
+    if (!Number.isNaN(dateAdded.getTime())) {
+      row.date_added = dateAdded.toISOString().slice(0, 10)
+    }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .update(row)
+      .eq('id', item.id)
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Failed to update class:', error.message)
+      return NextResponse.json({ error: 'Could not update this class.' }, { status: 500 })
+    }
+
+    // Clean up replaced storage assets if needed
+    const pathsToRemove: string[] = []
+    if (existing.pdf_storage_path && existing.pdf_storage_path !== newPdfStoragePath) {
+      pathsToRemove.push(existing.pdf_storage_path)
+    }
+    if (existing.image_storage_path && existing.image_storage_path !== newImageStoragePath) {
+      pathsToRemove.push(existing.image_storage_path)
+    }
+    if (pathsToRemove.length > 0) {
+      await supabase.storage.from(CLASS_ASSETS_BUCKET).remove(pathsToRemove).catch(() => {})
+    }
+
+    const [savedClass] = await classesFromDatabase([data as ClassDatabaseRow])
+    return NextResponse.json(savedClass)
+  } catch (error) {
+    console.error('Class update request failed:', error)
+    return NextResponse.json({ error: 'Could not update this class.' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   if (!isAdmin(request)) {
     return NextResponse.json({ error: 'Admin access required.' }, { status: 401 })

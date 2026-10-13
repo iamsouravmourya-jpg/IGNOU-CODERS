@@ -17,8 +17,8 @@ Deployed with Next.js (App Router), Supabase for database & authentication, and 
 
 ### 🛠️ Admin Panel Studio (`/admin`)
 - **Secure Access Control**: Separate, secure admin URL with passcode and server-verified session cookie.
-- **Recorded Content Manager**: Publish, edit, and delete chapters, topics, YouTube video URLs, and PDF attachments.
-- **Live Class Manager**: Schedule live Google Meet sessions with custom titles, timings, and thumbnail covers.
+- **Recorded Content Manager**: Publish, edit (with pencil action button), and delete chapters, topics, YouTube video URLs, cover thumbnails, and PDF attachments.
+- **Live Class Manager**: Schedule, edit (with pencil action button), and delete live Google Meet sessions with custom topics, timings, and thumbnail posters.
 - **Automatic Supabase Sync**: Real-time server-side persistence using the Supabase Service Role key with automatic offline fallback.
 
 ### ⚡ Performance & Analytics

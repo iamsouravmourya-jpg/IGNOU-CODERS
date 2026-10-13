@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   KeyRound,
   Lock,
+  Pencil,
   Plus,
   Radio,
   Search,
@@ -141,6 +142,36 @@ export default function AdminPage() {
   const [imageDataUrl, setImageDataUrl] = useState('')
   const [isImageDragging, setIsImageDragging] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
+
+  // Edit class state
+  const [editingClass, setEditingClass] = useState<ClassItem | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editYoutubeUrl, setEditYoutubeUrl] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editPdfMode, setEditPdfMode] = useState<'keep' | 'upload' | 'url' | 'remove'>('keep')
+  const [editPdfUrl, setEditPdfUrl] = useState('')
+  const [editPdfFile, setEditPdfFile] = useState<File | null>(null)
+  const editPdfInputRef = useRef<HTMLInputElement>(null)
+  const [editImageMode, setEditImageMode] = useState<'keep' | 'upload' | 'url' | 'remove'>('keep')
+  const [editImageUrl, setEditImageUrl] = useState('')
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
+  const [editImageDataUrl, setEditImageDataUrl] = useState('')
+  const editImageInputRef = useRef<HTMLInputElement>(null)
+  const [isSavingEditClass, setIsSavingEditClass] = useState(false)
+  const [editClassError, setEditClassError] = useState('')
+
+  // Edit live session state
+  const [editingLiveSession, setEditingLiveSession] = useState<LiveSessionItem | null>(null)
+  const [editLiveTitle, setEditLiveTitle] = useState('')
+  const [editLiveMeetUrl, setEditLiveMeetUrl] = useState('')
+  const [editLiveTime, setEditLiveTime] = useState('')
+  const [editLiveImageMode, setEditLiveImageMode] = useState<'keep' | 'upload' | 'url' | 'remove'>('keep')
+  const [editLiveImageUrl, setEditLiveImageUrl] = useState('')
+  const [editLiveImageFile, setEditLiveImageFile] = useState<File | null>(null)
+  const [editLiveImageDataUrl, setEditLiveImageDataUrl] = useState('')
+  const editLiveImageInputRef = useRef<HTMLInputElement>(null)
+  const [isSavingEditLiveSession, setIsSavingEditLiveSession] = useState(false)
+  const [editLiveError, setEditLiveError] = useState('')
 
   const filteredClasses = classes.filter((item) => {
     const query = classSearch.trim().toLowerCase()
@@ -332,8 +363,10 @@ export default function AdminPage() {
     () => () => {
       if (imageDataUrl.startsWith('blob:')) URL.revokeObjectURL(imageDataUrl)
       if (liveImageDataUrl.startsWith('blob:')) URL.revokeObjectURL(liveImageDataUrl)
+      if (editImageDataUrl.startsWith('blob:')) URL.revokeObjectURL(editImageDataUrl)
+      if (editLiveImageDataUrl.startsWith('blob:')) URL.revokeObjectURL(editLiveImageDataUrl)
     },
-    [imageDataUrl, liveImageDataUrl],
+    [imageDataUrl, liveImageDataUrl, editImageDataUrl, editLiveImageDataUrl],
   )
 
   async function handleLogin(e: React.FormEvent) {
@@ -648,6 +681,247 @@ export default function AdminPage() {
       setStorageError(error instanceof Error ? error.message : 'Could not delete live session.')
     } finally {
       setDeletingLiveSessionId(null)
+    }
+  }
+
+  function handleStartEditClass(cls: ClassItem) {
+    setEditingClass(cls)
+    setEditTitle(cls.title)
+    setEditYoutubeUrl(cls.youtubeUrl)
+    setEditNotes(cls.notes || '')
+    setEditPdfMode(cls.pdfUrl || cls.pdfStoragePath ? 'keep' : 'upload')
+    setEditPdfUrl(cls.pdfUrl && !cls.pdfStoragePath ? cls.pdfUrl : '')
+    setEditPdfFile(null)
+    setEditImageMode(cls.imageUrl || cls.imageStoragePath ? 'keep' : 'upload')
+    setEditImageUrl(cls.imageUrl && !cls.imageStoragePath ? cls.imageUrl : '')
+    setEditImageFile(null)
+    setEditImageDataUrl('')
+    setEditClassError('')
+  }
+
+  async function handleSaveEditClass(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingClass || isSavingEditClass) return
+
+    if (!editTitle.trim()) {
+      setEditClassError('Enter a topic or class title.')
+      return
+    }
+
+    const embed = toYouTubeEmbedUrl(editYoutubeUrl)
+    if (!embed) {
+      setEditClassError('Enter a valid YouTube video, Shorts, or embed link.')
+      return
+    }
+
+    let finalPdfUrl = ''
+    let finalPdfName: string | undefined = undefined
+    let finalPdfStoragePath: string | undefined = undefined
+
+    if (editPdfMode === 'keep') {
+      finalPdfUrl = editingClass.pdfUrl
+      finalPdfName = editingClass.pdfFileName
+      finalPdfStoragePath = editingClass.pdfStoragePath
+    } else if (editPdfMode === 'url' && editPdfUrl.trim()) {
+      try {
+        const parsed = new URL(editPdfUrl.trim())
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+          setEditClassError('Please use a valid http:// or https:// URL for the PDF.')
+          return
+        }
+        finalPdfUrl = editPdfUrl.trim()
+      } catch {
+        setEditClassError('Please enter a valid PDF URL.')
+        return
+      }
+    } else if (editPdfMode === 'remove') {
+      finalPdfUrl = ''
+      finalPdfName = undefined
+      finalPdfStoragePath = undefined
+    }
+
+    let finalImageUrl: string | undefined = undefined
+    let finalImageStoragePath: string | undefined = undefined
+
+    if (editImageMode === 'keep') {
+      finalImageUrl = editingClass.imageUrl
+      finalImageStoragePath = editingClass.imageStoragePath
+    } else if (editImageMode === 'url' && editImageUrl.trim()) {
+      try {
+        const parsed = new URL(editImageUrl.trim())
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+          setEditClassError('Please use a valid http:// or https:// URL for the image.')
+          return
+        }
+        finalImageUrl = editImageUrl.trim()
+      } catch {
+        setEditClassError('Please enter a valid image URL.')
+        return
+      }
+    } else if (editImageMode === 'remove') {
+      finalImageUrl = undefined
+      finalImageStoragePath = undefined
+    }
+
+    setIsSavingEditClass(true)
+    setEditClassError('')
+    const uploadedPaths: string[] = []
+
+    try {
+      if (editPdfMode === 'upload' && editPdfFile) {
+        const uploadedPdf = await uploadClassAsset(editPdfFile, 'pdf')
+        uploadedPaths.push(uploadedPdf.path)
+        finalPdfUrl = ''
+        finalPdfName = editPdfFile.name
+        finalPdfStoragePath = uploadedPdf.path
+      }
+
+      if (editImageMode === 'upload' && editImageFile) {
+        const uploadedImage = await uploadClassAsset(editImageFile, 'image')
+        uploadedPaths.push(uploadedImage.path)
+        finalImageUrl = undefined
+        finalImageStoragePath = uploadedImage.path
+      }
+
+      const updatedItem: ClassItem = {
+        ...editingClass,
+        title: editTitle.trim(),
+        youtubeUrl: embed,
+        notes: editNotes.trim(),
+        pdfUrl: finalPdfUrl,
+        pdfFileName: finalPdfName,
+        pdfStoragePath: finalPdfStoragePath,
+        imageUrl: finalImageUrl,
+        imageStoragePath: finalImageStoragePath,
+      }
+
+      const response = await fetch('/api/admin/classes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem),
+      })
+
+      const result = (await response.json()) as ClassItem | { error?: string }
+      if (!response.ok || !('id' in result)) {
+        throw new Error(
+          'error' in result ? result.error ?? 'Could not update class.' : 'Could not update class.',
+        )
+      }
+
+      setClasses((current) => current.map((item) => (item.id === result.id ? result : item)))
+      setEditingClass(null)
+      setSuccessMessage(`"${result.title}" updated successfully!`)
+      setTimeout(() => setSuccessMessage(''), 4000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not update class.'
+      try {
+        await removeUploadedAssets(uploadedPaths)
+      } catch {}
+      setEditClassError(message)
+    } finally {
+      setIsSavingEditClass(false)
+    }
+  }
+
+  function handleStartEditLiveSession(session: LiveSessionItem) {
+    setEditingLiveSession(session)
+    setEditLiveTitle(session.title)
+    setEditLiveMeetUrl(session.meetUrl)
+    setEditLiveTime(session.scheduledTime || '')
+    setEditLiveImageMode(session.imageUrl || session.imageStoragePath ? 'keep' : 'upload')
+    setEditLiveImageUrl(session.imageUrl && !session.imageStoragePath ? session.imageUrl : '')
+    setEditLiveImageFile(null)
+    setEditLiveImageDataUrl('')
+    setEditLiveError('')
+  }
+
+  async function handleSaveEditLiveSession(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingLiveSession || isSavingEditLiveSession) return
+
+    if (!editLiveTitle.trim()) {
+      setEditLiveError('Enter a live session topic/title.')
+      return
+    }
+
+    const meetLink = editLiveMeetUrl.trim()
+    if (!meetLink) {
+      setEditLiveError('Enter a valid Google Meet link.')
+      return
+    }
+
+    let finalImageUrl: string | undefined = undefined
+    let finalImageStoragePath: string | undefined = undefined
+
+    if (editLiveImageMode === 'keep') {
+      finalImageUrl = editingLiveSession.imageUrl
+      finalImageStoragePath = editingLiveSession.imageStoragePath
+    } else if (editLiveImageMode === 'url' && editLiveImageUrl.trim()) {
+      try {
+        const parsed = new URL(editLiveImageUrl.trim())
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          finalImageUrl = editLiveImageUrl.trim()
+        }
+      } catch {
+        setEditLiveError('Please enter a valid image URL.')
+        return
+      }
+    } else if (editLiveImageMode === 'remove') {
+      finalImageUrl = undefined
+      finalImageStoragePath = undefined
+    }
+
+    setIsSavingEditLiveSession(true)
+    setEditLiveError('')
+    const uploadedPaths: string[] = []
+
+    try {
+      if (editLiveImageMode === 'upload' && editLiveImageFile) {
+        const uploaded = await uploadClassAsset(editLiveImageFile, 'image')
+        uploadedPaths.push(uploaded.path)
+        finalImageUrl = undefined
+        finalImageStoragePath = uploaded.path
+      }
+
+      const updatedItem: LiveSessionItem = {
+        ...editingLiveSession,
+        title: editLiveTitle.trim(),
+        meetUrl: meetLink,
+        scheduledTime: editLiveTime.trim() || 'Today · Live Session',
+        imageUrl: finalImageUrl,
+        imageStoragePath: finalImageStoragePath,
+      }
+
+      const response = await fetch('/api/admin/live-sessions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem),
+      })
+
+      let savedSession = updatedItem
+      if (response.ok) {
+        const saved = await response.json()
+        if (saved && saved.id) savedSession = saved
+      } else {
+        const err = await response.json()
+        throw new Error(err.error || 'Could not update live session.')
+      }
+
+      const updatedList = liveSessions.map((s) => (s.id === savedSession.id ? savedSession : s))
+      setLiveSessions(updatedList)
+      saveLiveSessionsLocally(updatedList)
+
+      setEditingLiveSession(null)
+      setSuccessMessage(`Live session "${savedSession.title}" updated successfully!`)
+      setTimeout(() => setSuccessMessage(''), 4000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not update live session.'
+      try {
+        await removeUploadedAssets(uploadedPaths)
+      } catch {}
+      setEditLiveError(message)
+    } finally {
+      setIsSavingEditLiveSession(false)
     }
   }
 
@@ -1262,6 +1536,14 @@ export default function AdminPage() {
                       </Link>
                       <button
                         type="button"
+                        onClick={() => handleStartEditClass(cls)}
+                        title="Edit class & notes"
+                        className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] transition hover:border-[#8fb5e5] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1] dark:hover:text-[#61c5ff] cursor-pointer"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(cls.id)}
                         disabled={deletingClassId === cls.id}
                         title="Delete class"
@@ -1567,6 +1849,14 @@ export default function AdminPage() {
                         </a>
                         <button
                           type="button"
+                          onClick={() => handleStartEditLiveSession(session)}
+                          title="Edit live session"
+                          className="inline-flex items-center justify-center rounded-lg border border-[#d8e1ec] bg-white p-1.5 text-[#314255] transition hover:border-red-300 hover:text-red-600 dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1] dark:hover:text-red-400 cursor-pointer"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDeleteLiveSession(session.id)}
                           disabled={deletingLiveSessionId === session.id}
                           title="Delete live session"
@@ -1587,6 +1877,617 @@ export default function AdminPage() {
           </div>
         </div>
       </main>
+
+      {/* EDIT RECORDED CLASS MODAL */}
+      {editingClass && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSavingEditClass) setEditingClass(null)
+          }}
+        >
+          <div className="relative my-8 w-full max-w-xl rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-[#e2e8f0] pb-4 dark:border-[#2a3b50]">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-9 items-center justify-center rounded-lg bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
+                  <Pencil className="size-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
+                    Edit Recorded Class
+                  </h3>
+                  <p className="text-xs text-[#647083] dark:text-[#94a3b8]">
+                    Update lecture title, video URL, notes, or attachments
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isSavingEditClass && setEditingClass(null)}
+                className="rounded-lg p-1 text-[#94a3b8] transition hover:bg-[#f1f5f9] hover:text-[#172333] dark:hover:bg-[#192638] dark:hover:text-[#edf3fb] cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {editClassError && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+                {editClassError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditClass} className="mt-4 space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                  Topic / Class Title *
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                  YouTube Video Link / Embed URL *
+                </label>
+                <input
+                  type="url"
+                  value={editYoutubeUrl}
+                  onChange={(e) => setEditYoutubeUrl(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </div>
+
+              {/* Cover Image */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                    Cover Image / Thumbnail
+                  </label>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    {(editingClass.imageUrl || editingClass.imageStoragePath) && (
+                      <button
+                        type="button"
+                        onClick={() => setEditImageMode('keep')}
+                        className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                          editImageMode === 'keep'
+                            ? 'bg-[#087fce] text-white'
+                            : 'text-[#647083] hover:text-[#087fce]'
+                        }`}
+                      >
+                        Keep Current
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditImageMode('upload')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editImageMode === 'upload'
+                          ? 'bg-[#087fce] text-white'
+                          : 'text-[#647083] hover:text-[#087fce]'
+                      }`}
+                    >
+                      Upload New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditImageMode('url')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editImageMode === 'url'
+                          ? 'bg-[#087fce] text-white'
+                          : 'text-[#647083] hover:text-[#087fce]'
+                      }`}
+                    >
+                      URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditImageMode('remove')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editImageMode === 'remove'
+                          ? 'bg-red-600 text-white'
+                          : 'text-red-500 hover:text-red-600'
+                      }`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {editImageMode === 'keep' && editingClass.imageUrl && (
+                  <div className="flex items-center gap-3 rounded-xl border border-[#d8e1ec] bg-[#f8fafc] p-2.5 dark:border-[#34445a] dark:bg-[#192638]">
+                    <img
+                      src={editingClass.imageUrl}
+                      alt="Current cover"
+                      className="size-12 rounded-lg object-cover"
+                    />
+                    <div className="text-xs">
+                      <span className="font-semibold text-[#172333] dark:text-[#edf3fb]">Current Cover Active</span>
+                      <p className="text-[10px] text-[#647083] dark:text-[#94a3b8]">Will be preserved</p>
+                    </div>
+                  </div>
+                )}
+
+                {editImageMode === 'upload' && (
+                  <div>
+                    <input
+                      ref={editImageInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setEditImageFile(file)
+                          setEditImageDataUrl(URL.createObjectURL(file))
+                        }
+                      }}
+                    />
+                    {editImageDataUrl ? (
+                      <div className="flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50/50 p-2.5 dark:border-emerald-800 dark:bg-emerald-950/20">
+                        <img
+                          src={editImageDataUrl}
+                          alt="New preview"
+                          className="size-12 rounded-lg object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                            {editImageFile?.name}
+                          </p>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Ready to upload on save</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditImageFile(null)
+                            setEditImageDataUrl('')
+                          }}
+                          className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => editImageInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-[#d8e1ec] bg-[#f8fafc] hover:border-[#087fce] dark:border-[#34445a] dark:bg-[#192638] cursor-pointer"
+                      >
+                        <ImageIcon className="size-5 text-[#94a3b8] mb-1" />
+                        <span className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">Click to select new image</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {editImageMode === 'url' && (
+                  <input
+                    type="url"
+                    value={editImageUrl}
+                    onChange={(e) => setEditImageUrl(e.target.value)}
+                    placeholder="https://example.com/cover.jpg"
+                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  />
+                )}
+
+                {editImageMode === 'remove' && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 italic">
+                    Cover image will be removed upon saving.
+                  </p>
+                )}
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                  Notes Description / Key Points
+                </label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Lecture notes or topics covered..."
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </div>
+
+              {/* PDF Notes */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                    PDF Notes
+                  </label>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    {(editingClass.pdfUrl || editingClass.pdfStoragePath) && (
+                      <button
+                        type="button"
+                        onClick={() => setEditPdfMode('keep')}
+                        className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                          editPdfMode === 'keep'
+                            ? 'bg-[#087fce] text-white'
+                            : 'text-[#647083] hover:text-[#087fce]'
+                        }`}
+                      >
+                        Keep Current
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditPdfMode('upload')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editPdfMode === 'upload'
+                          ? 'bg-[#087fce] text-white'
+                          : 'text-[#647083] hover:text-[#087fce]'
+                      }`}
+                    >
+                      Upload New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditPdfMode('url')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editPdfMode === 'url'
+                          ? 'bg-[#087fce] text-white'
+                          : 'text-[#647083] hover:text-[#087fce]'
+                      }`}
+                    >
+                      URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditPdfMode('remove')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editPdfMode === 'remove'
+                          ? 'bg-red-600 text-white'
+                          : 'text-red-500 hover:text-red-600'
+                      }`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {editPdfMode === 'keep' && (editingClass.pdfUrl || editingClass.pdfStoragePath) && (
+                  <div className="flex items-center gap-3 rounded-xl border border-[#d8e1ec] bg-[#f8fafc] p-2.5 dark:border-[#34445a] dark:bg-[#192638]">
+                    <FileText className="size-5 text-[#087fce]" />
+                    <div className="text-xs truncate flex-1 min-w-0">
+                      <span className="font-semibold text-[#172333] dark:text-[#edf3fb] block truncate">
+                        {editingClass.pdfFileName || 'Attached PDF Notes'}
+                      </span>
+                      <p className="text-[10px] text-[#647083] dark:text-[#94a3b8]">Current file will be preserved</p>
+                    </div>
+                  </div>
+                )}
+
+                {editPdfMode === 'upload' && (
+                  <div>
+                    <input
+                      ref={editPdfInputRef}
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) setEditPdfFile(file)
+                      }}
+                    />
+                    {editPdfFile ? (
+                      <div className="flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50/50 p-2.5 dark:border-emerald-800 dark:bg-emerald-950/20">
+                        <FileText className="size-5 text-emerald-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                            {editPdfFile.name}
+                          </p>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            {Math.round(editPdfFile.size / 1024)} KB · Ready to upload
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEditPdfFile(null)}
+                          className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => editPdfInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-[#d8e1ec] bg-[#f8fafc] hover:border-[#087fce] dark:border-[#34445a] dark:bg-[#192638] cursor-pointer"
+                      >
+                        <Upload className="size-5 text-[#94a3b8] mb-1" />
+                        <span className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">Click to select new PDF</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {editPdfMode === 'url' && (
+                  <input
+                    type="url"
+                    value={editPdfUrl}
+                    onChange={(e) => setEditPdfUrl(e.target.value)}
+                    placeholder="https://example.com/notes.pdf"
+                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-[#087fce] focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  />
+                )}
+
+                {editPdfMode === 'remove' && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 italic">
+                    PDF notes attachment will be removed upon saving.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e2e8f0] dark:border-[#2a3b50]">
+                <button
+                  type="button"
+                  disabled={isSavingEditClass}
+                  onClick={() => setEditingClass(null)}
+                  className="rounded-xl border border-[#d8e1ec] px-4 py-2 text-xs font-semibold text-[#647083] hover:bg-[#f1f5f9] dark:border-[#34445a] dark:text-[#94a3b8] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEditClass}
+                  className="flex items-center gap-2 rounded-xl bg-[#087fce] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#0665aa] disabled:opacity-60 cursor-pointer"
+                >
+                  {isSavingEditClass ? <Upload className="size-3.5 animate-pulse" /> : <Pencil className="size-3.5" />}
+                  <span>{isSavingEditClass ? 'Updating...' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT LIVE SESSION MODAL */}
+      {editingLiveSession && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSavingEditLiveSession) setEditingLiveSession(null)
+          }}
+        >
+          <div className="relative my-8 w-full max-w-xl rounded-2xl border border-[#dce5f1] bg-white p-6 shadow-2xl dark:border-[#2a3b50] dark:bg-[#131e2d] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-[#e2e8f0] pb-4 dark:border-[#2a3b50]">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-9 items-center justify-center rounded-lg bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                  <Pencil className="size-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
+                    Edit Live Session
+                  </h3>
+                  <p className="text-xs text-[#647083] dark:text-[#94a3b8]">
+                    Update session topic, Google Meet link, timing, or photo
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isSavingEditLiveSession && setEditingLiveSession(null)}
+                className="rounded-lg p-1 text-[#94a3b8] transition hover:bg-[#f1f5f9] hover:text-[#172333] dark:hover:bg-[#192638] dark:hover:text-[#edf3fb] cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {editLiveError && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+                {editLiveError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditLiveSession} className="mt-4 space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                  Session Name / Topic *
+                </label>
+                <input
+                  type="text"
+                  value={editLiveTitle}
+                  onChange={(e) => setEditLiveTitle(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                  Google Meet Link *
+                </label>
+                <input
+                  type="url"
+                  value={editLiveMeetUrl}
+                  onChange={(e) => setEditLiveMeetUrl(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </div>
+
+              {/* Photo */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                    Session Photo / Thumbnail
+                  </label>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    {(editingLiveSession.imageUrl || editingLiveSession.imageStoragePath) && (
+                      <button
+                        type="button"
+                        onClick={() => setEditLiveImageMode('keep')}
+                        className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                          editLiveImageMode === 'keep'
+                            ? 'bg-red-600 text-white'
+                            : 'text-[#647083] hover:text-red-600'
+                        }`}
+                      >
+                        Keep Current
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditLiveImageMode('upload')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editLiveImageMode === 'upload'
+                          ? 'bg-red-600 text-white'
+                          : 'text-[#647083] hover:text-red-600'
+                      }`}
+                    >
+                      Upload New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditLiveImageMode('url')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editLiveImageMode === 'url'
+                          ? 'bg-red-600 text-white'
+                          : 'text-[#647083] hover:text-red-600'
+                      }`}
+                    >
+                      URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditLiveImageMode('remove')}
+                      className={`px-2 py-0.5 rounded font-medium cursor-pointer ${
+                        editLiveImageMode === 'remove'
+                          ? 'bg-red-600 text-white'
+                          : 'text-red-500 hover:text-red-600'
+                      }`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {editLiveImageMode === 'keep' && editingLiveSession.imageUrl && (
+                  <div className="flex items-center gap-3 rounded-xl border border-[#d8e1ec] bg-[#f8fafc] p-2.5 dark:border-[#34445a] dark:bg-[#192638]">
+                    <img
+                      src={editingLiveSession.imageUrl}
+                      alt="Current photo"
+                      className="size-12 rounded-lg object-cover"
+                    />
+                    <div className="text-xs">
+                      <span className="font-semibold text-[#172333] dark:text-[#edf3fb]">Current Photo Active</span>
+                      <p className="text-[10px] text-[#647083] dark:text-[#94a3b8]">Will be preserved</p>
+                    </div>
+                  </div>
+                )}
+
+                {editLiveImageMode === 'upload' && (
+                  <div>
+                    <input
+                      ref={editLiveImageInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setEditLiveImageFile(file)
+                          setEditLiveImageDataUrl(URL.createObjectURL(file))
+                        }
+                      }}
+                    />
+                    {editLiveImageDataUrl ? (
+                      <div className="flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50/50 p-2.5 dark:border-emerald-800 dark:bg-emerald-950/20">
+                        <img
+                          src={editLiveImageDataUrl}
+                          alt="New photo preview"
+                          className="size-12 rounded-lg object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                            {editLiveImageFile?.name}
+                          </p>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Ready to upload on save</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditLiveImageFile(null)
+                            setEditLiveImageDataUrl('')
+                          }}
+                          className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => editLiveImageInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-[#d8e1ec] bg-[#f8fafc] hover:border-red-400 dark:border-[#34445a] dark:bg-[#192638] cursor-pointer"
+                      >
+                        <Upload className="size-5 text-[#94a3b8] mb-1" />
+                        <span className="text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">Click to select new photo</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {editLiveImageMode === 'url' && (
+                  <input
+                    type="url"
+                    value={editLiveImageUrl}
+                    onChange={(e) => setEditLiveImageUrl(e.target.value)}
+                    placeholder="https://example.com/poster.jpg"
+                    className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                  />
+                )}
+
+                {editLiveImageMode === 'remove' && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 italic">
+                    Session photo will be removed upon saving.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#314255] dark:text-[#cbd5e1]">
+                  Scheduled Time / Timing
+                </label>
+                <input
+                  type="text"
+                  value={editLiveTime}
+                  onChange={(e) => setEditLiveTime(e.target.value)}
+                  placeholder="e.g. Saturday · 7:30 PM IST or Today 8 PM"
+                  className="w-full rounded-xl border border-[#d8e1ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172333] transition focus:border-red-500 focus:bg-white focus:outline-none dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e2e8f0] dark:border-[#2a3b50]">
+                <button
+                  type="button"
+                  disabled={isSavingEditLiveSession}
+                  onClick={() => setEditingLiveSession(null)}
+                  className="rounded-xl border border-[#d8e1ec] px-4 py-2 text-xs font-semibold text-[#647083] hover:bg-[#f1f5f9] dark:border-[#34445a] dark:text-[#94a3b8] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEditLiveSession}
+                  className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-red-700 disabled:opacity-60 cursor-pointer"
+                >
+                  {isSavingEditLiveSession ? <Upload className="size-3.5 animate-pulse" /> : <Pencil className="size-3.5" />}
+                  <span>{isSavingEditLiveSession ? 'Updating...' : 'Save Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { ClassDatabaseRow } from '@/lib/classes'
+import { sortClassesSequentially, type ClassDatabaseRow } from '@/lib/classes'
 import { classesFromDatabase } from '@/lib/classes-server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -25,10 +25,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Could not load classes.' }, { status: 500 })
     }
 
-    return NextResponse.json(
-      await classesFromDatabase(data as ClassDatabaseRow[]),
-      { headers: { 'Cache-Control': 'private, no-store' } },
-    )
+    const resolved = await classesFromDatabase(data as ClassDatabaseRow[])
+    const sorted = sortClassesSequentially(resolved, 'asc')
+
+    return NextResponse.json(sorted, {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
   } catch (error) {
     console.error('Class loading request failed:', error)
     return NextResponse.json(

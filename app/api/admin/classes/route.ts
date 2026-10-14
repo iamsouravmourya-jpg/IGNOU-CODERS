@@ -5,6 +5,7 @@ import {
 } from '@/lib/admin-auth'
 import {
   CLASS_ASSETS_BUCKET,
+  sortClassesSequentially,
   toYouTubeEmbedUrl,
   type ClassDatabaseRow,
 } from '@/lib/classes'
@@ -44,10 +45,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Could not load published classes.' }, { status: 500 })
     }
 
-    return NextResponse.json(
-      await classesFromDatabase(data as ClassDatabaseRow[]),
-      { headers: { 'Cache-Control': 'private, no-store' } },
-    )
+    const resolved = await classesFromDatabase(data as ClassDatabaseRow[])
+    const sorted = sortClassesSequentially(resolved, 'asc')
+
+    return NextResponse.json(sorted, {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
   } catch (error) {
     console.error('Admin class loading request failed:', error)
     return NextResponse.json({ error: 'Could not load published classes.' }, { status: 500 })

@@ -97,7 +97,23 @@ export function projectFromDatabase(row: ProjectDatabaseRow): ProjectSubmission 
   }
 }
 
-export function readProjectsLocally(): ProjectSubmission[] {
+const CLIENT_STUDENT_ID_KEY = 'ignou_coders_student_device_id'
+
+export function getOrCreateClientStudentId(): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    let id = window.localStorage.getItem(CLIENT_STUDENT_ID_KEY)
+    if (!id) {
+      id = `std_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+      window.localStorage.setItem(CLIENT_STUDENT_ID_KEY, id)
+    }
+    return id
+  } catch {
+    return ''
+  }
+}
+
+export function readProjectsLocally(userId?: string): ProjectSubmission[] {
   if (typeof window === 'undefined') return []
 
   const saved = window.localStorage.getItem(PROJECT_STORAGE_KEY)
@@ -110,11 +126,11 @@ export function readProjectsLocally(): ProjectSubmission[] {
       const now = Date.now()
       const valid = parsed.filter((item: ProjectSubmission) => {
         if (!item || !item.expiresAt) return false
-        return new Date(item.expiresAt).getTime() > now
+        if (new Date(item.expiresAt).getTime() <= now) return false
+        // If a userId is given, only show this student's own submissions!
+        if (userId && item.userId && item.userId !== userId) return false
+        return true
       })
-      if (valid.length !== parsed.length) {
-        saveProjectsLocally(valid)
-      }
       return valid
     }
     return []
@@ -123,10 +139,28 @@ export function readProjectsLocally(): ProjectSubmission[] {
   }
 }
 
-export function saveProjectsLocally(items: ProjectSubmission[]) {
+export function saveProjectsLocally(items: ProjectSubmission[], userId?: string) {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(items))
+    const existingRaw = window.localStorage.getItem(PROJECT_STORAGE_KEY)
+    let all: ProjectSubmission[] = []
+    if (existingRaw) {
+      try {
+        const parsed = JSON.parse(existingRaw)
+        if (Array.isArray(parsed)) all = parsed
+      } catch {
+        all = []
+      }
+    }
+
+    if (userId) {
+      // Keep other users' items intact, but update current user's items
+      const others = all.filter((p) => p.userId && p.userId !== userId)
+      const merged = [...items, ...others]
+      window.localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(merged))
+    } else {
+      window.localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(items))
+    }
   } catch {
     // ignore
   }

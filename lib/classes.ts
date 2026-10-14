@@ -105,3 +105,60 @@ export function toYouTubeEmbedUrl(input: string): string | null {
     return null
   }
 }
+
+/**
+ * Extracts class sequence number from titles like:
+ * "Class 1: HTML Basics", "Day 2 - Tags", "03 Introduction", "Lecture 1", etc.
+ */
+export function extractClassSequenceNumber(title: string): number | null {
+  if (!title) return null
+
+  // 1. Explicit keyword followed by number: "Class 1", "Session #2", "Day 3", "Lec 4", etc.
+  const keywordMatch = title.match(
+    /\b(?:class|day|session|part|lecture|chapter|ep|episode|lec|module|unit)\s*(?:#|no\.?|num\.?)?\s*(\d+)/i,
+  )
+  if (keywordMatch && keywordMatch[1]) {
+    return parseInt(keywordMatch[1], 10)
+  }
+
+  // 2. Leading number: "1. ", "01 - ", "1: ", "#1 "
+  const leadingMatch = title.match(/^\s*(?:#)?\s*(\d+)\s*[-.:)]/i)
+  if (leadingMatch && leadingMatch[1]) {
+    return parseInt(leadingMatch[1], 10)
+  }
+
+  // 3. Standalone number anywhere in title: "HTML 1", "HTML - 2"
+  const standaloneMatch = title.match(/\b(\d+)\b/)
+  if (standaloneMatch && standaloneMatch[1]) {
+    return parseInt(standaloneMatch[1], 10)
+  }
+
+  return null
+}
+
+/**
+ * Sorts classes sequentially (1 -> 2 -> 3...) with natural fallback
+ */
+export function sortClassesSequentially(
+  items: ClassItem[],
+  direction: 'asc' | 'desc' = 'asc',
+): ClassItem[] {
+  return [...items].sort((a, b) => {
+    const numA = extractClassSequenceNumber(a.title)
+    const numB = extractClassSequenceNumber(b.title)
+
+    if (numA !== null && numB !== null && numA !== numB) {
+      return direction === 'asc' ? numA - numB : numB - numA
+    }
+
+    if (numA !== null && numB === null) return direction === 'asc' ? -1 : 1
+    if (numA === null && numB !== null) return direction === 'asc' ? 1 : -1
+
+    // Natural alphanumeric fallback ("Class 1" < "Class 2" < "Class 3")
+    const cmp = a.title.localeCompare(b.title, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    })
+    return direction === 'asc' ? cmp : -cmp
+  })
+}

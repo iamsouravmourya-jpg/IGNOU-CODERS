@@ -27,13 +27,19 @@ import {
   Search,
   Sun,
   Trash2,
+  ArrowUpDown,
+  Hash,
   UploadCloud,
   Video,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
-import type { ClassItem } from '@/lib/classes'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  extractClassSequenceNumber,
+  sortClassesSequentially,
+  type ClassItem,
+} from '@/lib/classes'
 import {
   DEFAULT_LIVE_SESSIONS,
   readLiveSessions,
@@ -44,6 +50,7 @@ import {
   type ProjectSubmission,
   convertCodeToHtml,
   formatTimeRemaining,
+  getOrCreateClientStudentId,
   readProjectsLocally,
   saveProjectsLocally,
 } from '@/lib/projects'
@@ -62,7 +69,7 @@ export function StudentDashboard({
   isDark = false,
   toggleTheme,
 }: StudentDashboardProps) {
-  const { profile } = useSession()
+  const { profile, user } = useSession()
   const [activeTab, setActiveTab] = useState<'recorded' | 'live' | 'projects'>('recorded')
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [liveSessions, setLiveSessions] = useState<LiveSessionItem[]>([])
@@ -71,6 +78,8 @@ export function StudentDashboard({
   const [isLoadingClasses, setIsLoadingClasses] = useState(true)
   const [isLoadingLive, setIsLoadingLive] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [classSortOrder, setClassSortOrder] = useState<'seq' | 'latest' | 'oldest'>('seq')
+  const [studentId, setStudentId] = useState('')
 
   // Project submissions states
   const [projects, setProjects] = useState<ProjectSubmission[]>([])
@@ -101,14 +110,44 @@ export function StudentDashboard({
   const [hasUnread, setHasUnread] = useState(true)
   const notificationRef = useRef<HTMLDivElement>(null)
 
-  const filteredClasses = classes.filter((item) => {
+  // Determine persistent student ID (scoped per student account or device)
+  useEffect(() => {
+    const id =
+      user?.id ||
+      profile?.id ||
+      profile?.email ||
+      getOrCreateClientStudentId()
+    if (id) {
+      setStudentId(id)
+    }
+  }, [user?.id, profile?.id, profile?.email])
+
+  // Sequentially sorted classes (Guarantees 1 -> 2 -> 3)
+  const filteredClasses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    return (
-      !query ||
-      item.title.toLowerCase().includes(query) ||
-      item.notes.toLowerCase().includes(query)
-    )
-  })
+    const matches = classes.filter((item) => {
+      return (
+        !query ||
+        item.title.toLowerCase().includes(query) ||
+        item.notes.toLowerCase().includes(query)
+      )
+    })
+
+    if (classSortOrder === 'seq') {
+      return sortClassesSequentially(matches, 'asc')
+    }
+    if (classSortOrder === 'latest') {
+      return [...matches].sort(
+        (a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime(),
+      )
+    }
+    if (classSortOrder === 'oldest') {
+      return [...matches].sort(
+        (a, b) => new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime(),
+      )
+    }
+    return sortClassesSequentially(matches, 'asc')
+  }, [classes, searchQuery, classSortOrder])
 
   // Load recorded classes
   useEffect(() => {
@@ -182,20 +221,33 @@ export function StudentDashboard({
     }
   }, [profile?.name, studentName])
 
-  // Load project submissions
+  // Load project submissions - STRICTLY SCOPED TO THIS STUDENT ONLY!
   useEffect(() => {
     const controller = new AbortController()
 
     async function loadProjects() {
+      const activeId =
+        studentId ||
+        user?.id ||
+        profile?.id ||
+        profile?.email ||
+        getOrCreateClientStudentId()
+
+      if (!activeId) {
+        setIsLoadingProjects(false)
+        return
+      }
+
       try {
-        const response = await fetch('/api/projects', {
-          signal: controller.signal,
-        })
+        const response = await fetch(
+          `/api/projects?userId=${encodeURIComponent(activeId)}&email=${encodeURIComponent(profile?.email || '')}`,
+          { signal: controller.signal },
+        )
         if (response.ok) {
           const result = (await response.json()) as ProjectSubmission[]
           if (Array.isArray(result)) {
             setProjects(result)
-            saveProjectsLocally(result)
+            saveProjectsLocally(result, activeId)
             return
           }
         }
@@ -205,13 +257,13 @@ export function StudentDashboard({
         if (!controller.signal.aborted) setIsLoadingProjects(false)
       }
 
-      const local = readProjectsLocally()
+      const local = readProjectsLocally(activeId)
       setProjects(local)
     }
 
     loadProjects()
     return () => controller.abort()
-  }, [])
+  }, [studentId, user?.id, profile?.id, profile?.email])
 
   function handleProjectFileChosen(file: File) {
     setSelectedFile(file)
@@ -246,6 +298,13 @@ export function StudentDashboard({
 
     setIsSubmittingProject(true)
     try {
+      const activeId =
+        studentId ||
+        user?.id ||
+        profile?.id ||
+        profile?.email ||
+        getOrCreateClientStudentId()
+
       let finalFileName = selectedFile?.name || 'project.html'
       let finalContent = fileContent
 
@@ -256,6 +315,7 @@ export function StudentDashboard({
       }
 
       const payload = {
+        userId: activeId,
         studentName: studentName.trim(),
         title: projectTitle.trim() || 'HTML Practical Assignment',
         submissionType: submissionMode,
@@ -282,6 +342,7 @@ export function StudentDashboard({
         submissionType: submissionMode,
         fileName: finalFileName,
         fileContent: finalContent,
+        userId: activeId,
         createdAt: data.createdAt || new Date().toISOString(),
         expiresAt:
           data.expiresAt ||
@@ -290,7 +351,7 @@ export function StudentDashboard({
 
       const updated = [newProject, ...projects.filter((p) => p.id !== newProject.id)]
       setProjects(updated)
-      saveProjectsLocally(updated)
+      saveProjectsLocally(updated, activeId)
 
       setProjectSuccess('Project submitted successfully! It is active for 48 hours for teacher review.')
       setRawCode('')
@@ -310,15 +371,24 @@ export function StudentDashboard({
   async function handleDeleteProject(id: string) {
     if (!confirm('Are you sure you want to delete this project submission?')) return
 
+    const activeId =
+      studentId ||
+      user?.id ||
+      profile?.id ||
+      profile?.email ||
+      getOrCreateClientStudentId()
+
     try {
-      await fetch(`/api/projects?id=${id}`, { method: 'DELETE' })
+      await fetch(`/api/projects?id=${id}&userId=${encodeURIComponent(activeId)}`, {
+        method: 'DELETE',
+      })
     } catch {
       // Local fallback
     }
 
     const updated = projects.filter((p) => p.id !== id)
     setProjects(updated)
-    saveProjectsLocally(updated)
+    saveProjectsLocally(updated, activeId)
   }
 
   function handleStartEditProject(project: ProjectSubmission) {
@@ -340,10 +410,18 @@ export function StudentDashboard({
     setIsSavingEditProject(true)
     setEditProjectError('')
 
+    const activeId =
+      studentId ||
+      user?.id ||
+      profile?.id ||
+      profile?.email ||
+      getOrCreateClientStudentId()
+
     try {
       const converted = convertCodeToHtml(editRawCode, editStudentName)
       const payload = {
         id: editingProject.id,
+        userId: activeId,
         studentName: editStudentName.trim(),
         title: editProjectTitle.trim() || 'HTML Practical Assignment',
         fileName: converted.fileName,
@@ -374,7 +452,7 @@ export function StudentDashboard({
           : p,
       )
       setProjects(updated)
-      saveProjectsLocally(updated)
+      saveProjectsLocally(updated, activeId)
       setEditingProject(null)
     } catch (err) {
       setEditProjectError(err instanceof Error ? err.message : 'Could not update project.')
@@ -767,7 +845,7 @@ export function StudentDashboard({
                   </div>
                 </div>
 
-                {/* Header row with Search */}
+                {/* Header row with Search and Sequence Sorting */}
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
@@ -779,22 +857,55 @@ export function StudentDashboard({
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
-                      Search by topic title or subject code
+                      Organized sequentially in 1 → 2 → 3 class order
                     </p>
                   </div>
-                  {!isLoadingClasses && classes.length > 0 && (
-                    <label className="relative block w-full sm:max-w-xs">
-                      <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
-                      <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Find a class..."
-                        aria-label="Search classes"
-                        className="w-full rounded-xl border border-[#d8e1ec] bg-white py-2.5 pl-10 pr-3.5 text-sm text-[#172333] shadow-xs outline-none transition placeholder:text-[#94a3b8] focus:border-[#087fce] focus:ring-4 focus:ring-[#087fce]/10 dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb] dark:focus:border-[#61c5ff] dark:focus:ring-[#61c5ff]/10"
-                      />
-                    </label>
-                  )}
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+                    {/* Sort Selector */}
+                    <div className="flex items-center gap-1 self-start sm:self-auto rounded-xl border border-[#d8e1ec] bg-white p-1 text-xs font-semibold shadow-xs dark:border-[#34445a] dark:bg-[#192638]">
+                      <button
+                        type="button"
+                        onClick={() => setClassSortOrder('seq')}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition cursor-pointer ${
+                          classSortOrder === 'seq'
+                            ? 'bg-[#087fce] text-white shadow-xs'
+                            : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8]'
+                        }`}
+                        title="Sequential order: Class 1, Class 2, Class 3..."
+                      >
+                        <Hash className="size-3.5" />
+                        <span>Order 1-2-3</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClassSortOrder('latest')}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition cursor-pointer ${
+                          classSortOrder === 'latest'
+                            ? 'bg-[#087fce] text-white shadow-xs'
+                            : 'text-[#647083] hover:text-[#172333] dark:text-[#94a3b8]'
+                        }`}
+                        title="Latest added first"
+                      >
+                        <ArrowUpDown className="size-3.5" />
+                        <span>Latest</span>
+                      </button>
+                    </div>
+
+                    {!isLoadingClasses && classes.length > 0 && (
+                      <label className="relative block w-full sm:w-60">
+                        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#94a3b8]" />
+                        <input
+                          type="search"
+                          value={searchQuery}
+                          onChange={(event) => setSearchQuery(event.target.value)}
+                          placeholder="Find a class..."
+                          aria-label="Search classes"
+                          className="w-full rounded-xl border border-[#d8e1ec] bg-white py-2 pl-10 pr-3.5 text-xs sm:text-sm text-[#172333] shadow-xs outline-none transition placeholder:text-[#94a3b8] focus:border-[#087fce] focus:ring-2 focus:ring-[#087fce]/10 dark:border-[#34445a] dark:bg-[#192638] dark:text-[#edf3fb]"
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
 
                 {/* Error / Loading / Content */}
@@ -829,63 +940,75 @@ export function StudentDashboard({
                 ) : (
                   /* Topics Grid */
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredClasses.map((cls) => (
-                      <Link
-                        key={cls.id}
-                        href={`/dashboard/classes/${encodeURIComponent(cls.id)}`}
-                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#e1e7ef] bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-[#8dc9f5] hover:shadow-xl dark:border-[#2a3b50] dark:bg-[#192638] dark:hover:border-[#61c5ff]/60"
-                      >
-                        <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-[#e1e7ef] bg-[#eaf3fb] dark:border-[#2a3b50] dark:bg-[#101b2a]">
-                          {cls.imageUrl ? (
-                            <img
-                              src={cls.imageUrl}
-                              alt=""
-                              className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex size-full items-center justify-center bg-gradient-to-br from-[#dff2ff] via-[#edf6ff] to-[#d9e9fa] dark:from-[#1a3149] dark:via-[#17283c] dark:to-[#203953]">
-                              <span className="flex size-14 items-center justify-center rounded-2xl border border-white/70 bg-white/80 text-[#087fce] shadow-sm dark:border-white/10 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
-                                <Video className="size-6" />
+                    {filteredClasses.map((cls) => {
+                      const classNum = extractClassSequenceNumber(cls.title)
+                      return (
+                        <Link
+                          key={cls.id}
+                          href={`/dashboard/classes/${encodeURIComponent(cls.id)}`}
+                          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#e1e7ef] bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-[#8dc9f5] hover:shadow-xl dark:border-[#2a3b50] dark:bg-[#192638] dark:hover:border-[#61c5ff]/60"
+                        >
+                          <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-[#e1e7ef] bg-[#eaf3fb] dark:border-[#2a3b50] dark:bg-[#101b2a]">
+                            {cls.imageUrl ? (
+                              <img
+                                src={cls.imageUrl}
+                                alt=""
+                                className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex size-full items-center justify-center bg-gradient-to-br from-[#dff2ff] via-[#edf6ff] to-[#d9e9fa] dark:from-[#1a3149] dark:via-[#17283c] dark:to-[#203953]">
+                                <span className="flex size-14 items-center justify-center rounded-2xl border border-white/70 bg-white/80 text-[#087fce] shadow-sm dark:border-white/10 dark:bg-[#0d1b2b]/70 dark:text-[#61c5ff]">
+                                  <Video className="size-6" />
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Class sequence tag */}
+                            {classNum !== null && (
+                              <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-[#087fce] px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
+                                <Hash className="size-2.5" />
+                                Class #{classNum}
                               </span>
-                            </div>
-                          )}
-                          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-[#07111d]/75 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
-                            <Video className="size-3" />
-                            Video lesson
-                          </span>
-                          {cls.pdfUrl && (
-                            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#475569] shadow-sm dark:bg-[#111c2a]/95 dark:text-[#d8e4f0]">
-                              <FileText className="size-3" />
-                              Notes
+                            )}
+
+                            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-[#07111d]/75 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                              <Video className="size-3" />
+                              Video lesson
                             </span>
-                          )}
-                        </div>
-
-                        <div className="flex flex-1 flex-col justify-between p-5 sm:p-6">
-                          <div>
-                            <h3 className="text-base font-bold leading-snug text-[#172333] transition group-hover:text-[#087fce] dark:text-[#edf3fb] dark:group-hover:text-[#61c5ff] line-clamp-2">
-                              {cls.title}
-                            </h3>
-
-                            {cls.notes && (
-                              <p className="mt-2.5 text-xs text-[#647083] dark:text-[#94a3b8] line-clamp-2 leading-relaxed">
-                                {cls.notes}
-                              </p>
+                            {cls.pdfUrl && (
+                              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-[#475569] shadow-sm dark:bg-[#111c2a]/95 dark:text-[#d8e4f0]">
+                                <FileText className="size-3" />
+                                Notes
+                              </span>
                             )}
                           </div>
 
-                          <div className="mt-5 flex items-center justify-between border-t border-[#f0f4f9] pt-4 dark:border-[#2a3b50]">
-                            <span className="text-[11px] text-[#647083] dark:text-[#94a3b8]">
-                              Added: {cls.dateAdded}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#087fce] dark:text-[#61c5ff] group-hover:translate-x-0.5 transition-transform">
-                              Open class
-                              <Play className="size-3 fill-current" />
-                            </span>
+                          <div className="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                            <div>
+                              <h3 className="text-base font-bold leading-snug text-[#172333] transition group-hover:text-[#087fce] dark:text-[#edf3fb] dark:group-hover:text-[#61c5ff] line-clamp-2">
+                                {cls.title}
+                              </h3>
+
+                              {cls.notes && (
+                                <p className="mt-2.5 text-xs text-[#647083] dark:text-[#94a3b8] line-clamp-2 leading-relaxed">
+                                  {cls.notes}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="mt-5 flex items-center justify-between border-t border-[#f0f4f9] pt-4 dark:border-[#2a3b50]">
+                              <span className="text-[11px] text-[#647083] dark:text-[#94a3b8]">
+                                Added: {cls.dateAdded}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#087fce] dark:text-[#61c5ff] group-hover:translate-x-0.5 transition-transform">
+                                Open class
+                                <Play className="size-3 fill-current" />
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      )
+                    })}
                   </div>
                 )}
               </>

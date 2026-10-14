@@ -15,8 +15,19 @@ import {
 } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')?.trim()
+    const studentEmail = searchParams.get('email')?.trim()
+
+    // PRIVACY: If no student identifier is provided, do NOT leak other students' submissions!
+    if (!userId && !studentEmail) {
+      return NextResponse.json([], {
+        headers: { 'Cache-Control': 'private, no-store' },
+      })
+    }
+
     let supabase
     if (isSupabaseAdminConfigured()) {
       supabase = createSupabaseAdminClient()
@@ -28,11 +39,20 @@ export async function GET() {
     await cleanupExpiredProjects(supabase)
 
     const nowIso = new Date().toISOString()
-    const { data, error } = await supabase
+    let query = supabase
       .from('project_submissions')
       .select('*')
       .gt('expires_at', nowIso)
-      .order('created_at', { ascending: false })
+
+    if (userId && studentEmail) {
+      query = query.or(`user_id.eq."${userId}",user_id.eq."${studentEmail}"`)
+    } else if (userId) {
+      query = query.eq('user_id', userId)
+    } else if (studentEmail) {
+      query = query.eq('user_id', studentEmail)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.warn('Could not query project_submissions:', error.message)
@@ -80,6 +100,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const userId =
+    typeof payload.userId === 'string' && payload.userId.trim()
+      ? payload.userId.trim()
+      : undefined
+
   const submissionType = payload.submissionType === 'code' ? 'code' : 'file'
   let fileName = typeof payload.fileName === 'string' ? payload.fileName.trim() : 'project.html'
   let fileContent = typeof payload.fileContent === 'string' ? payload.fileContent : ''
@@ -123,6 +148,7 @@ export async function POST(request: NextRequest) {
     fileContent,
     fileUrl: typeof payload.fileUrl === 'string' ? payload.fileUrl : undefined,
     fileStoragePath: typeof payload.fileStoragePath === 'string' ? payload.fileStoragePath : undefined,
+    userId,
     createdAt,
     expiresAt,
   }
@@ -144,6 +170,7 @@ export async function POST(request: NextRequest) {
       file_content: submission.fileContent ?? null,
       file_url: submission.fileUrl ?? null,
       file_storage_path: submission.fileStoragePath ?? null,
+      user_id: submission.userId ?? null,
       created_at: submission.createdAt,
       expires_at: submission.expiresAt,
     })

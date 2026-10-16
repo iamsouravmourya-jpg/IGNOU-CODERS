@@ -133,6 +133,6 @@ Run the SQL migration scripts in the Supabase SQL Editor in chronological order:
 
 ---
 
-## 📄 License
+## 📄 License & Intellectual Property
 
-Private project developed for IGNOU Coders community (`pyeater.in`). All rights reserved.
+Copyright © 2026 Sourav Maurya. All rights reserved. The tech infrastructure, database designs, and custom UI components are the exclusive proprietary property of the Lead Developer. No unauthorized distribution or locking is permitted.

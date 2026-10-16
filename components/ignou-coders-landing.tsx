@@ -584,7 +584,7 @@ export function IgnouCodersLanding() {
           </div>
 
           <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-400 dark:border-slate-900 dark:text-slate-500">
-            © 2026 IGNOU Coders. Created by Som Singh &amp; Sourav Maurya. Independent student initiative, not officially affiliated with IGNOU administration.
+            Copyright © 2026 Sourav Maurya. All rights reserved. The tech infrastructure, database designs, and custom UI components are the exclusive proprietary property of the Lead Developer. No unauthorized distribution or locking is permitted.
           </div>
         </div>
       </footer>

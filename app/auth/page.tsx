@@ -161,7 +161,7 @@ function AuthForm() {
 
           {/* Footer note on left */}
           <div className="relative z-10 text-xs text-slate-400">
-            © 2026 IGNOU Coders. Created by Som Singh &amp; Sourav Maurya.
+            Copyright © 2026 Sourav Maurya. All rights reserved. The tech infrastructure, database designs, and custom UI components are the exclusive proprietary property of the Lead Developer. No unauthorized distribution or locking is permitted.
           </div>
         </div>
 

@@ -22,6 +22,7 @@ import {
   MessageCircle,
   Moon,
   Pencil,
+  Layers,
   Play,
   Radio,
   Search,
@@ -36,6 +37,9 @@ import {
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  detectClassCategory,
+  extractCategoriesFromClasses,
+  getCategoryBadgeStyle,
   extractClassSequenceNumber,
   sortClassesSequentially,
   type ClassItem,
@@ -79,6 +83,7 @@ export function StudentDashboard({
   const [isLoadingLive, setIsLoadingLive] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [classSortOrder, setClassSortOrder] = useState<'seq' | 'latest' | 'oldest'>('seq')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [studentId, setStudentId] = useState('')
 
   // Project submissions states
@@ -105,6 +110,9 @@ export function StudentDashboard({
   const [isSavingEditProject, setIsSavingEditProject] = useState(false)
   const [editProjectError, setEditProjectError] = useState('')
 
+  // Dynamic courses auto-detected from class titles (e.g. HTML, CSS, Python, etc.)
+  const categories = useMemo(() => extractCategoriesFromClasses(classes), [classes])
+
   // Notifications
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [hasUnread, setHasUnread] = useState(true)
@@ -122,15 +130,23 @@ export function StudentDashboard({
     }
   }, [user?.id, profile?.id, profile?.email])
 
-  // Sequentially sorted classes (Guarantees 1 -> 2 -> 3)
+  // Sequentially sorted classes (Guarantees 1 -> 2 -> 3) with dynamic course filter
   const filteredClasses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     const matches = classes.filter((item) => {
-      return (
+      const matchesQuery =
         !query ||
         item.title.toLowerCase().includes(query) ||
         item.notes.toLowerCase().includes(query)
-      )
+      if (!matchesQuery) return false
+
+      if (selectedCategory !== 'all') {
+        const itemCat = detectClassCategory(item.title, item.notes)
+        if (itemCat.toLowerCase() !== selectedCategory.toLowerCase()) {
+          return false
+        }
+      }
+      return true
     })
 
     if (classSortOrder === 'seq') {
@@ -147,7 +163,7 @@ export function StudentDashboard({
       )
     }
     return sortClassesSequentially(matches, 'asc')
-  }, [classes, searchQuery, classSortOrder])
+  }, [classes, searchQuery, selectedCategory, classSortOrder])
 
   // Load recorded classes
   useEffect(() => {
@@ -845,15 +861,98 @@ export function StudentDashboard({
                   </div>
                 </div>
 
+                {/* Dynamic Course Filter Bar (Auto-detected: HTML, CSS, Python, etc.) */}
+                {!isLoadingClasses && classes.length > 0 && categories.length > 0 && (
+                  <div className="mb-6 rounded-2xl border border-[#dce5f1] bg-white p-3.5 sm:p-4.5 shadow-xs dark:border-[#2a3b50] dark:bg-[#131e2d]">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="flex size-7 items-center justify-center rounded-lg bg-[#087fce]/10 text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
+                          <Layers className="size-4" />
+                        </span>
+                        <div>
+                          <span className="text-xs font-bold text-[#172333] dark:text-[#edf3fb]">
+                            Course / Subject
+                          </span>
+                          <span className="ml-2 text-[11px] text-[#647083] dark:text-[#94a3b8]">
+                            (Auto-detected from class titles)
+                          </span>
+                        </div>
+                      </div>
+                      {selectedCategory !== 'all' && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategory('all')}
+                          className="text-xs font-bold text-[#087fce] hover:underline dark:text-[#61c5ff] cursor-pointer self-start sm:self-auto"
+                        >
+                          Show All ({classes.length} classes)
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Course Buttons */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategory('all')}
+                        className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                          selectedCategory === 'all'
+                            ? 'bg-[#087fce] text-white shadow-md shadow-[#087fce]/25 ring-2 ring-[#087fce]/30'
+                            : 'border border-[#d8e1ec] bg-[#f8fafc] text-[#475569] hover:bg-[#eef4fb] hover:text-[#172333] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] dark:hover:bg-[#203148]'
+                        }`}
+                      >
+                        <span>All Courses</span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                            selectedCategory === 'all'
+                              ? 'bg-white/25 text-white'
+                              : 'bg-white text-[#475569] dark:bg-[#131e2d] dark:text-[#94a3b8]'
+                          }`}
+                        >
+                          {classes.length}
+                        </span>
+                      </button>
+
+                      {categories.map((cat) => {
+                        const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase()
+                        const badgeStyle = getCategoryBadgeStyle(cat.name)
+                        return (
+                          <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() => setSelectedCategory(cat.name)}
+                            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-[#087fce] text-white shadow-md shadow-[#087fce]/25 ring-2 ring-[#087fce]/30'
+                                : 'border border-[#d8e1ec] bg-white text-[#334155] hover:border-[#087fce] hover:bg-[#f0f7ff] hover:text-[#087fce] dark:border-[#34445a] dark:bg-[#192638] dark:text-[#cbd5e1] dark:hover:border-[#61c5ff] dark:hover:bg-[#192638] dark:hover:text-[#61c5ff]'
+                            }`}
+                          >
+                            <span className={`size-2 rounded-full ${isActive ? 'bg-white' : badgeStyle.dot}`} />
+                            <span>{cat.name}</span>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                                isActive
+                                  ? 'bg-white/25 text-white'
+                                  : 'bg-[#f1f5f9] text-[#64748b] dark:bg-[#131e2d] dark:text-[#94a3b8]'
+                              }`}
+                            >
+                              {cat.count}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Header row with Search and Sequence Sorting */}
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-lg font-bold text-[#172333] dark:text-[#edf3fb]">
-                        Recorded topics
+                        {selectedCategory === 'all' ? 'Recorded topics' : `${selectedCategory} Classes`}
                       </h2>
                       <span className="rounded-full bg-[#087fce]/10 px-2.5 py-1 text-[11px] font-bold text-[#087fce] dark:bg-[#61c5ff]/15 dark:text-[#61c5ff]">
-                        {classes.length} {classes.length === 1 ? 'class' : 'classes'}
+                        {filteredClasses.length} {filteredClasses.length === 1 ? 'class' : 'classes'}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-[#647083] dark:text-[#94a3b8]">
@@ -931,17 +1030,30 @@ export function StudentDashboard({
                   <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-white px-6 py-12 text-center dark:border-[#34445a] dark:bg-[#131e2d]">
                     <Search className="mx-auto size-8 text-[#94a3b8]" />
                     <h3 className="mt-3 text-sm font-bold text-[#172333] dark:text-[#edf3fb]">
-                      No matching classes
+                      No matching classes found
                     </h3>
                     <p className="mt-1 text-sm text-[#647083] dark:text-[#94a3b8]">
-                      Try another title or topic.
+                      {selectedCategory !== 'all'
+                        ? `No classes found in "${selectedCategory}". Try selecting "All Courses".`
+                        : 'Try another title or topic.'}
                     </p>
+                    {selectedCategory !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategory('all')}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#087fce] px-4 py-2 text-xs font-bold text-white shadow-sm"
+                      >
+                        Reset to All Courses
+                      </button>
+                    )}
                   </div>
                 ) : (
                   /* Topics Grid */
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredClasses.map((cls) => {
                       const classNum = extractClassSequenceNumber(cls.title)
+                      const classCategory = detectClassCategory(cls.title, cls.notes)
+                      const categoryStyle = getCategoryBadgeStyle(classCategory)
                       return (
                         <Link
                           key={cls.id}
@@ -970,6 +1082,12 @@ export function StudentDashboard({
                                 Class #{classNum}
                               </span>
                             )}
+
+                            {/* Class category tag top-right */}
+                            <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md backdrop-blur-md border ${categoryStyle.bg} ${categoryStyle.text} ${categoryStyle.border}`}>
+                              <span className={`size-1.5 rounded-full ${categoryStyle.dot}`} />
+                              {classCategory}
+                            </span>
 
                             <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-[#07111d]/75 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
                               <Video className="size-3" />

@@ -9,16 +9,20 @@ Deployed with Next.js (App Router), Supabase for database & authentication, and 
 ## 🚀 Key Features
 
 ### 🎓 Student Experience (`/dashboard`)
-- **Recorded Sessions View**: Interactive catalog of curriculum chapters and modules with video playback and instant PDF study material downloads.
+- **Automated Course Categorization**: Dynamically detects courses and subjects (e.g., `HTML`, `CSS`, `Python`, `JavaScript`, etc.) directly from class titles without hardcoding, creating clean filter buttons with live counters to prevent lecture clutter.
+- **Strict 1-2-3 Sequential Sorting**: Automatic title-based numbering parser ensures lectures stay strictly organized in sequential order (Class 1 → Class 2 → Class 3).
+- **Recorded Sessions View**: Interactive catalog of curriculum chapters and modules with video playback, cover thumbnails, and instant PDF study material downloads.
+- **Project Submissions Hub**: Submit HTML code and drop project files with automatic code-to-file conversion, 2-day self-destruct countdown, and live code preview modal.
 - **Live Sessions View (Google Meet)**: Dedicated tab displaying live classes scheduled by the admin with instant join links.
 - **Smart Notification Bell**: Real-time indicator alerting students whenever a new live session or doubt class is announced.
 - **Focused Video Player**: In-depth modal with embedded YouTube player, lesson description, and quick-download notes button.
 - **Client-Side Session Store**: Persistent student state and seamless authentication via Supabase Auth (Email / Password & Google OAuth).
 
 ### 🛠️ Admin Panel Studio (`/admin`)
-- **Secure Access Control**: Separate, secure admin URL with passcode and server-verified session cookie.
-- **Recorded Content Manager**: Publish, edit (with pencil action button), and delete chapters, topics, YouTube video URLs, cover thumbnails, and PDF attachments.
-- **Live Class Manager**: Schedule, edit (with pencil action button), and delete live Google Meet sessions with custom topics, timings, and thumbnail posters.
+- **Sticky & Frozen Form Layout**: Left creation form ("Add New Class & Notes") remains frozen and sticky on screen with independent scrolling, allowing easy content creation while browsing lengthy class catalogs on the right.
+- **Course-Segregated Content Manager**: Manage, filter by detected course pills, edit, and delete chapters, topics, YouTube video URLs, cover thumbnails, and PDF attachments.
+- **Live Class Manager**: Schedule, edit (with pencil action button), and delete live Google Meet sessions with sticky layout, custom topics, timings, and thumbnail posters.
+- **Interactive Student Project Reviewer**: Review, live-preview rendered HTML in sandboxed iframes, and download student project submissions.
 - **Automatic Supabase Sync**: Real-time server-side persistence using the Supabase Service Role key with automatic offline fallback.
 
 ### ⚡ Performance & Analytics

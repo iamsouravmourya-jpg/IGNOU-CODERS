@@ -24,15 +24,19 @@ import {
   Unlock,
   Upload,
   Video,
+  Layers,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CLASS_ASSETS_BUCKET,
   CLASS_STORAGE_KEY,
   readClasses,
   toYouTubeEmbedUrl,
+  detectClassCategory,
+  extractCategoriesFromClasses,
+  getCategoryBadgeStyle,
   type ClassItem,
 } from '@/lib/classes'
 import {
@@ -188,6 +192,7 @@ export default function AdminPage() {
 
   // Admin navigation tab
   const [adminTab, setAdminTab] = useState<'classes' | 'live' | 'projects'>('classes')
+  const [adminSelectedCategory, setAdminSelectedCategory] = useState<string>('all')
 
   // Project submissions review states
   const [adminProjects, setAdminProjects] = useState<ProjectSubmission[]>([])
@@ -198,14 +203,24 @@ export default function AdminPage() {
   const [previewAdminTab, setPreviewAdminTab] = useState<'preview' | 'code'>('preview')
   const [adminCopiedCode, setAdminCopiedCode] = useState(false)
 
-  const filteredClasses = classes.filter((item) => {
+  // Dynamic courses auto-detected from class titles
+  const adminCategories = useMemo(() => extractCategoriesFromClasses(classes), [classes])
+
+  const filteredClasses = useMemo(() => {
     const query = classSearch.trim().toLowerCase()
-    return (
-      !query ||
-      item.title.toLowerCase().includes(query) ||
-      item.notes.toLowerCase().includes(query)
-    )
-  })
+    return classes.filter((item) => {
+      const matches =
+        !query ||
+        item.title.toLowerCase().includes(query) ||
+        item.notes.toLowerCase().includes(query)
+      if (!matches) return false
+      if (adminSelectedCategory !== 'all') {
+        const cat = detectClassCategory(item.title, item.notes)
+        if (cat.toLowerCase() !== adminSelectedCategory.toLowerCase()) return false
+      }
+      return true
+    })
+  }, [classes, classSearch, adminSelectedCategory])
   const classesWithPdf = classes.filter((item) => item.pdfUrl).length
   const classesWithImages = classes.filter((item) => item.imageUrl).length
 
@@ -1352,9 +1367,9 @@ export default function AdminPage() {
           </p>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-12">
-          {/* Add Class Form (5 cols on large) */}
-          <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-6 lg:col-span-5">
+        <div className="grid gap-8 lg:grid-cols-12 items-start">
+          {/* Add Class Form (5 cols on large) - FROZEN / STICKY */}
+          <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-4 lg:col-span-5 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <h2 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
               Add New Class & Notes
             </h2>
@@ -1671,6 +1686,44 @@ export default function AdminPage() {
               )}
             </div>
 
+            {/* Course Filter Pills in Admin */}
+            {adminCategories.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-[#f0f4f9] pt-3.5 dark:border-[#2a3b50]">
+                <button
+                  type="button"
+                  onClick={() => setAdminSelectedCategory('all')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                    adminSelectedCategory === 'all'
+                      ? 'bg-[#087fce] text-white shadow-xs'
+                      : 'bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] dark:bg-[#192638] dark:text-[#94a3b8]'
+                  }`}
+                >
+                  <span>All</span>
+                  <span className="text-[10px] opacity-80">({classes.length})</span>
+                </button>
+                {adminCategories.map((cat) => {
+                  const isActive = adminSelectedCategory.toLowerCase() === cat.name.toLowerCase()
+                  const style = getCategoryBadgeStyle(cat.name)
+                  return (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => setAdminSelectedCategory(cat.name)}
+                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                        isActive
+                          ? 'bg-[#087fce] text-white shadow-xs'
+                          : 'border border-[#d8e1ec] bg-white text-[#334155] hover:border-[#087fce] dark:border-[#34445a] dark:bg-[#131e2d] dark:text-[#cbd5e1]'
+                      }`}
+                    >
+                      <span className={`size-1.5 rounded-full ${isActive ? 'bg-white' : style.dot}`} />
+                      <span>{cat.name}</span>
+                      <span className="text-[10px] opacity-80">({cat.count})</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
             <div className="mt-5 space-y-3">
               {isLoadingClasses ? (
                 <div className="space-y-3" aria-label="Loading published classes">
@@ -1692,11 +1745,23 @@ export default function AdminPage() {
                 <div className="py-10 text-center">
                   <Search className="mx-auto size-7 text-[#94a3b8]" />
                   <p className="mt-2 text-sm font-semibold text-[#647083] dark:text-[#94a3b8]">
-                    No classes match that search.
+                    No classes match that filter.
                   </p>
+                  {adminSelectedCategory !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setAdminSelectedCategory('all')}
+                      className="mt-2 text-xs font-bold text-[#087fce] hover:underline dark:text-[#61c5ff]"
+                    >
+                      Show all courses
+                    </button>
+                  )}
                 </div>
               ) : (
-                filteredClasses.map((cls) => (
+                filteredClasses.map((cls) => {
+                  const cat = detectClassCategory(cls.title, cls.notes)
+                  const catStyle = getCategoryBadgeStyle(cat)
+                  return (
                   <div
                     key={cls.id}
                     className="group flex flex-col gap-3 rounded-xl border border-[#e1e7ef] bg-[#fbfdff] p-3 transition hover:border-[#b7d8f4] hover:bg-white hover:shadow-sm dark:border-[#2a3b50] dark:bg-[#192638]/70 dark:hover:border-[#61c5ff]/40 dark:hover:bg-[#192638] sm:flex-row sm:items-center sm:justify-between sm:p-4"
@@ -1715,9 +1780,15 @@ export default function AdminPage() {
                       )}
 
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] break-words line-clamp-2 sm:line-clamp-1">
-                          {cls.title}
-                        </h3>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <h3 className="text-sm font-bold text-[#172333] dark:text-[#edf3fb] break-words line-clamp-2 sm:line-clamp-1">
+                            {cls.title}
+                          </h3>
+                          <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${catStyle.bg} ${catStyle.text} border ${catStyle.border}`}>
+                            <span className={`size-1 rounded-full ${catStyle.dot}`} />
+                            {cat}
+                          </span>
+                        </div>
                         {cls.notes && (
                           <p className="mt-0.5 line-clamp-2 sm:line-clamp-1 text-xs text-[#647083] dark:text-[#94a3b8]">
                             {cls.notes}
@@ -1782,7 +1853,7 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </div>
-                ))
+                )})
               )}
             </div>
           </div>
@@ -1816,9 +1887,9 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-12">
-            {/* Live Session Form (5 cols on lg) */}
-            <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-6 lg:col-span-5">
+        <div className="grid gap-8 lg:grid-cols-12 items-start">
+            {/* Live Session Form (5 cols on lg) - FROZEN / STICKY */}
+            <div className="self-start rounded-2xl border border-[#dce5f1] bg-white p-5 shadow-sm dark:border-[#2a3b50] dark:bg-[#131e2d] sm:p-6 lg:sticky lg:top-4 lg:col-span-5 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
               <h3 className="text-base font-bold text-[#172333] dark:text-[#edf3fb]">
                 Schedule New Live Session
               </h3>
